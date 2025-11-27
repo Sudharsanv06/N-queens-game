@@ -59,11 +59,23 @@ Key: PORT
 Value: 5000
 ```
 
-### 3. MONGO_URI
+### 3. MONGO_URI (⚠️ CRITICAL - READ CAREFULLY)
 ```
 Key: MONGO_URI
 Value: mongodb+srv://sudharsanv06_db_user:pNXHCQCcb6IJFTqLA@n-queens-prod.tcdbvrt.mongodb.net/n-queens-game?retryWrites=true&w=majority&appName=n-queens-prod
 ```
+
+**⚠️ IMPORTANT NOTES:**
+- **NO quotes** around the value - paste the raw connection string
+- If password contains special characters (`@`, `:`, `/`, `#`, space), URL-encode them:
+  - `@` → `%40`
+  - `:` → `%3A`
+  - `/` → `%2F`
+  - `#` → `%23`
+  - space → `%20`
+- **Verify in MongoDB Atlas → Network Access:**
+  - Add IP: `0.0.0.0/0` (allow all IPs for testing)
+  - Or add Render's specific outbound IPs
 
 ### 4. JWT_SECRET (PRODUCTION VALUE - GENERATED)
 ```
@@ -192,6 +204,49 @@ Expected:
 ---
 
 ## ⚠️ Common Issues & Solutions
+
+### Issue: "querySrv ENOTFOUND" or "MongoDB connection error"
+**This is the most common deployment issue!**
+
+**Symptoms:**
+```
+MongoDB connection error: querySrv ENOTFOUND _mongodb._tcp.n-queens-prod.tcdbvrt.mongodb.net
+```
+
+**Solutions (try in order):**
+
+1. **Verify MONGO_URI in Render Environment:**
+   - Go to Render → Environment variables
+   - Confirm `MONGO_URI` exists (exact name, case-sensitive)
+   - Value has **NO quotes** around it
+   - Password special characters are URL-encoded
+
+2. **Check MongoDB Atlas IP Whitelist:**
+   - Go to MongoDB Atlas → Network Access
+   - Click "Add IP Address"
+   - Add `0.0.0.0/0` (allows all IPs - easiest for testing)
+   - Click "Confirm"
+   - **Wait 2-3 minutes** for Atlas to apply changes
+
+3. **Test from Render Shell:**
+   ```bash
+   # Open Render → Shell, run:
+   node -e "console.log(process.env.MONGO_URI)"
+   
+   # Or check all env vars:
+   printenv | grep MONGO
+   ```
+
+4. **Test DNS resolution from Render Shell:**
+   ```bash
+   nslookup -type=SRV _mongodb._tcp.n-queens-prod.tcdbvrt.mongodb.net
+   ```
+
+5. **After fixing, redeploy:**
+   - Events → Manual Deploy → Deploy latest commit
+   - Watch logs for "✅ MongoDB connected successfully"
+
+---
 
 ### Issue: "Service Root Directory is missing"
 **Solution:** 
