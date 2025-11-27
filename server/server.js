@@ -15,7 +15,7 @@ dotenv.config();
 // Import routes
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
-import gamesRoutes from './routes/games.js';
+import gamesRoutes from './routes/gameSaves.js';
 import achievementsRoutes from './routes/achievements.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import statsRoutes from './routes/stats.js';
@@ -33,11 +33,10 @@ import multiplayerRoutes from './routes/multiplayer.js';
 import matchmakingRoutes from './routes/matchmaking.js';
 
 // Import WebSocket handler
-import { initializeMultiplayerSocket } from './websocket/multiplayerSocket.js';
+import MultiplayerSocketHandler from './websocket/multiplayerSocket.js';
 
 // Import cron jobs
-import './cron/dailyChallengesCron.js';
-import './cron/streakCheckCron.js';
+import { initializeCronJobs } from './cron/dailyChallengeCron.js';
 
 // Import middleware
 import { globalErrorHandler, notFoundHandler } from './utils/errorHandler.js';
@@ -206,6 +205,8 @@ mongoose.connect(MONGO_URI, {
 })
   .then(() => {
     console.log('✅ MongoDB connected successfully');
+    // Initialize cron jobs after database connection
+    initializeCronJobs();
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error.message);
@@ -223,14 +224,14 @@ const io = new Server(server, {
 });
 
 // Initialize multiplayer WebSocket handler
-initializeMultiplayerSocket(io);
+const multiplayerHandler = new MultiplayerSocketHandler(io);
+multiplayerHandler.initialize();
 
 // Start server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${NODE_ENV}`);
   console.log(`🔗 CORS enabled for: ${CLIENT_ORIGIN}`);
-  console.log(`⏰ Cron jobs initialized`);
 });
 
 // Graceful shutdown
