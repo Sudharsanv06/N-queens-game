@@ -199,17 +199,27 @@ app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
 // Database connection
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+if (!MONGO_URI) {
+  console.error('❌ FATAL: MONGO_URI environment variable is not set!');
+  console.error('   Please add MONGO_URI to your Render environment variables.');
+  process.exit(1);
+}
+
+mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected successfully');
+    console.log(`   Database: ${mongoose.connection.name}`);
     // Initialize cron jobs after database connection
     initializeCronJobs();
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error.message);
+    console.error('   Connection string format:', MONGO_URI ? MONGO_URI.slice(0, 30) + '...' : 'MISSING');
+    console.error('   Troubleshooting:');
+    console.error('   1. Verify MONGO_URI is set in Render Environment variables');
+    console.error('   2. Check MongoDB Atlas Network Access allows 0.0.0.0/0');
+    console.error('   3. Wait 2-3 minutes after adding IP whitelist in Atlas');
+    console.error('   4. Verify connection string has no quotes around it');
     process.exit(1);
   });
 
