@@ -4,13 +4,11 @@ const userAchievementSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   achievementId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   unlockedAt: {
     type: Date,

@@ -4,8 +4,7 @@ const gameRoomSchema = new mongoose.Schema({
   roomId: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   // Match Configuration
   matchType: {

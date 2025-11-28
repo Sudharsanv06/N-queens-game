@@ -198,30 +198,47 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(globalErrorHandler);
 
-// Database connection
+// Database connection with retry logic
 if (!MONGO_URI) {
   console.error('❌ FATAL: MONGO_URI environment variable is not set!');
   console.error('   Please add MONGO_URI to your Render environment variables.');
   process.exit(1);
 }
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected successfully');
-    console.log(`   Database: ${mongoose.connection.name}`);
-    // Initialize cron jobs after database connection
-    initializeCronJobs();
-  })
-  .catch((error) => {
-    console.error('❌ MongoDB connection error:', error.message);
-    console.error('   Connection string format:', MONGO_URI ? MONGO_URI.slice(0, 30) + '...' : 'MISSING');
-    console.error('   Troubleshooting:');
-    console.error('   1. Verify MONGO_URI is set in Render Environment variables');
-    console.error('   2. Check MongoDB Atlas Network Access allows 0.0.0.0/0');
-    console.error('   3. Wait 2-3 minutes after adding IP whitelist in Atlas');
-    console.error('   4. Verify connection string has no quotes around it');
-    process.exit(1);
-  });
+const connectWithRetry = async (retries = 5, delay = 5000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+      });
+      console.log('✅ MongoDB connected successfully');
+      console.log(`   Database: ${mongoose.connection.name}`);
+      // Initialize cron jobs after database connection
+      initializeCronJobs();
+      return;
+    } catch (error) {
+      console.error(`❌ MongoDB connection attempt ${i + 1}/${retries} failed:`, error.message);
+      
+      if (i === retries - 1) {
+        console.error('   Connection string format:', MONGO_URI ? MONGO_URI.slice(0, 30) + '...' : 'MISSING');
+        console.error('   Troubleshooting:');
+        console.error('   1. Verify MONGO_URI is set in Render Environment variables');
+        console.error('   2. Check MongoDB Atlas Network Access allows 0.0.0.0/0');
+        console.error('   3. Wait 2-3 minutes after adding IP whitelist in Atlas');
+        console.error('   4. Verify connection string has no quotes around it');
+        console.error('   5. Ensure database name in connection string is correct');
+        process.exit(1);
+      }
+      
+      const waitTime = delay * Math.pow(2, i); // Exponential backoff
+      console.log(`   Retrying in ${waitTime / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+};
+
+connectWithRetry();
 
 // Create HTTP server and Socket.IO instance
 const server = createServer(app);
