@@ -41,6 +41,12 @@ class AnalyticsTracker {
 
   async trackEvent(eventType, data = {}) {
     try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        // Skip tracking for unauthenticated users
+        return
+      }
+
       const eventData = {
         eventType,
         sessionId: this.sessionId,
@@ -67,16 +73,7 @@ class AnalyticsTracker {
         this.eventQueue.push(eventData)
       }
     } catch (error) {
-      console.warn('Analytics tracking error:', error)
-      // Store in queue for retry
-      if (data) {
-        this.eventQueue.push({
-          eventType,
-          sessionId: this.sessionId,
-          ...data,
-          timestamp: new Date().toISOString()
-        })
-      }
+      // Silently ignore analytics errors
     }
   }
 
@@ -84,7 +81,7 @@ class AnalyticsTracker {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        // Don't track events for unauthenticated users
+        // Silently skip tracking for unauthenticated users
         return
       }
 
@@ -93,8 +90,12 @@ class AnalyticsTracker {
         timeout: 5000 // 5 second timeout
       })
     } catch (error) {
-      console.warn('Failed to send analytics event:', error)
-      throw error
+      // Silently fail - don't spam console with analytics errors
+      if (error.response?.status === 401) {
+        // Token expired, don't retry
+        return
+      }
+      // For other errors, just ignore
     }
   }
 

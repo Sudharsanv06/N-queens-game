@@ -2,7 +2,7 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RefreshCw, Check, X, Clock } from 'lucide-react'
 import { useMultiplayerSocket } from '../../hooks/useMultiplayerSocket'
-import { rejectRematch, closeRematchPrompt } from '../../store/slices/multiplayerSliceNew'
+import { rejectRematch, closeRematchPrompt } from '../../store/slices/multiplayerSlice'
 
 export const RematchButton = () => {
   const dispatch = useDispatch()

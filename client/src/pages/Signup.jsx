@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import { signupUser, clearError } from '../store/slices/authSlice';
+import { signupUser } from '../store/slices/authSlice';
+import { FaChessQueen, FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaIdCard } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import './Signup.css';
 
-const Signup = () => {
+function Signup() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  const { loading } = useSelector((state) => state.auth);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -16,95 +17,75 @@ const Signup = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    mobile: ''
   });
   
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/profile');
-    }
-  }, [isAuthenticated, navigate]);
-  
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  React.useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
-    if (!formData.username || !formData.name || !formData.email || !formData.password) {
-      toast.error('Please fill in all required fields');
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match!');
       return;
     }
-    
-    if (formData.username.length < 3) {
-      toast.error('Username must be at least 3 characters long');
-      return;
-    }
-    
+
     if (formData.password.length < 6) {
       toast.error('Password must be at least 6 characters long');
       return;
     }
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+
+    if (formData.username.length < 3) {
+      toast.error('Username must be at least 3 characters long');
       return;
     }
-    
-    const result = await dispatch(signupUser({
-      username: formData.username,
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      mobile: formData.mobile || undefined
-    }));
-    
-    if (result.type === 'auth/signup/fulfilled') {
+
+    try {
+      const { confirmPassword, ...signupData } = formData;
+      const result = await dispatch(signupUser(signupData)).unwrap();
       toast.success('Account created successfully! Welcome aboard!');
-      navigate('/profile');
+      navigate('/');
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error(error || 'Signup failed. Please try again.');
     }
   };
-  
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          {/* Logo/Title */}
-          <div className="text-center mb-6">
-            <motion.div
-              initial={{ scale: 0.5 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                ♛ N-Queens
-              </h1>
-            </motion.div>
-            <p className="text-gray-600 mt-2">Create your account to get started</p>
+    <div className="auth-page">
+      <div className="auth-decoration decoration-1"></div>
+      <div className="auth-decoration decoration-2"></div>
+
+      <div className={`auth-container ${isVisible ? 'visible' : ''}`}>
+        <div className="auth-card">
+          {/* Logo Section */}
+          <div className="auth-header">
+            <div className="auth-logo">
+              <FaChessQueen className="auth-logo-icon" />
+            </div>
+            <h1 className="auth-title">Join N-Queens</h1>
+            <p className="auth-subtitle">Create your account and start your journey</p>
           </div>
-          
+
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                Username <span className="text-red-500">*</span>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label htmlFor="username" className="form-label">
+                <FaUser className="label-icon" />
+                Username
               </label>
               <input
                 type="text"
@@ -112,15 +93,18 @@ const Signup = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="johndoe"
+                placeholder="Choose a unique username"
+                className="form-input"
                 required
+                minLength={3}
+                disabled={loading}
               />
             </div>
-            
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name <span className="text-red-500">*</span>
+
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">
+                <FaIdCard className="label-icon" />
+                Full Name
               </label>
               <input
                 type="text"
@@ -128,15 +112,18 @@ const Signup = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="John Doe"
+                placeholder="Enter your full name"
+                className="form-input"
                 required
+                minLength={2}
+                disabled={loading}
               />
             </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address <span className="text-red-500">*</span>
+
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                <FaEnvelope className="label-icon" />
+                Email Address
               </label>
               <input
                 type="email"
@@ -144,99 +131,124 @@ const Signup = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="you@example.com"
+                placeholder="Enter your email"
+                className="form-input"
                 required
+                disabled={loading}
               />
             </div>
-            
-            <div>
-              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">
-                Mobile Number (Optional)
+
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                <FaLock className="label-icon" />
+                Password
               </label>
-              <input
-                type="tel"
-                id="mobile"
-                name="mobile"
-                value={formData.mobile}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="1234567890"
-                pattern="[0-9]{10}"
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a strong password"
+                  className="form-input"
+                  required
+                  minLength={6}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <p className="form-hint">Minimum 6 characters</p>
             </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-red-500">*</span>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">
+                <FaLock className="label-icon" />
+                Confirm Password
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="••••••••"
-                required
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  className="form-input"
+                  required
+                  minLength={6}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
-            
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 outline-none"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg mt-6"
-            >
+
+            <button type="submit" className="auth-button" disabled={loading}>
               {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating account...
-                </div>
+                <>
+                  <span className="button-spinner"></span>
+                  <span>Creating Account...</span>
+                </>
               ) : (
-                'Create Account'
+                <>
+                  <span>Create Account</span>
+                  <FaArrowRight className="button-icon" />
+                </>
               )}
             </button>
           </form>
-          
+
           {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Already have an account?</span>
-            </div>
+          <div className="auth-divider">
+            <span>Already have an account?</span>
           </div>
-          
+
           {/* Login Link */}
-          <div className="text-center">
-            <Link
-              to="/login"
-              className="font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-            >
-              Log in instead
-            </Link>
+          <Link to="/login" className="auth-secondary-button">
+            Sign In Instead
+          </Link>
+
+          {/* Terms */}
+          <p className="terms-text">
+            By creating an account, you agree to our{' '}
+            <Link to="/terms" className="terms-link">Terms of Service</Link>
+            {' '}and{' '}
+            <Link to="/privacy" className="terms-link">Privacy Policy</Link>
+          </p>
+        </div>
+
+        {/* Benefits */}
+        <div className="auth-features">
+          <div className="feature-item">
+            <div className="feature-icon">🎯</div>
+            <p className="feature-text">Personal Dashboard</p>
+          </div>
+          <div className="feature-item">
+            <div className="feature-icon">📈</div>
+            <p className="feature-text">Progress Tracking</p>
+          </div>
+          <div className="feature-item">
+            <div className="feature-icon">🏅</div>
+            <p className="feature-text">Unlock Achievements</p>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
-};
+}
 
 export default Signup;

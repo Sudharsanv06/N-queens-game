@@ -24,7 +24,7 @@ import {
   setGameResult,
   setRematchRequested,
   setError
-} from '../store/slices/multiplayerSliceNew'
+} from '../store/slices/multiplayerSlice'
 import {
   setMatchFound,
   clearMatchData,

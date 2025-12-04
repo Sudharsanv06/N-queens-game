@@ -3,8 +3,7 @@ import mongoose from 'mongoose'
 const chatMessageSchema = new mongoose.Schema({
   roomId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

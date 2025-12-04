@@ -4,14 +4,12 @@ const userDailyChallengeSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   challengeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'DailyChallenge',
-    required: true,
-    index: true
+    required: true
   },
   status: {
     type: String,

@@ -4,9 +4,7 @@ import userSlice from './slices/userSlice'
 import statsSlice from './slices/statsSlice'
 import leaderboardSlice from './slices/leaderboardSlice'
 import gameSlice from './slices/gameSlice'
-import boardGameSlice from './slices/boardGameSlice'
 import multiplayerSlice from './slices/multiplayerSlice'
-import multiplayerSliceNew from './slices/multiplayerSliceNew'
 import matchmakingSlice from './slices/matchmakingSlice'
 import eloSlice from './slices/eloSlice'
 import uiSlice from './slices/uiSlice'
@@ -28,9 +26,7 @@ export const store = configureStore({
     stats: statsSlice,
     leaderboard: leaderboardSlice,
     game: gameSlice,
-    boardGame: boardGameSlice,
-    multiplayer: multiplayerSlice, // Old multiplayer (keep for compatibility)
-    multiplayerGame: multiplayerSliceNew, // New Day 9 multiplayer system
+    multiplayer: multiplayerSlice,
     matchmaking: matchmakingSlice,
     elo: eloSlice,
     ui: uiSlice,
@@ -52,7 +48,3 @@ export const store = configureStore({
       },
     }),
 })
-
-// Export types for TypeScript usage (remove if using pure JavaScript)
-// export type RootState = ReturnType<typeof store.getState>
-// export type AppDispatch = typeof store.dispatch

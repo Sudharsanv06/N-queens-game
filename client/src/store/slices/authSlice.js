@@ -131,6 +131,79 @@ export const fetchCurrentUser = createAsyncThunk(
   }
 )
 
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async ({ name, email }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.put(
+        `${API_BASE_URL}/auth/profile`,
+        { name, email },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+      
+      // Update user in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update profile')
+    }
+  }
+)
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async ({ currentPassword, newPassword }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.put(
+        `${API_BASE_URL}/auth/change-password`,
+        { currentPassword, newPassword },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+      
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to change password')
+    }
+  }
+)
+
+export const uploadAvatar = createAsyncThunk(
+  'auth/uploadAvatar',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/upload-avatar`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+      
+      // Update user in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to upload avatar')
+    }
+  }
+)
+
 const initialState = {
   user: JSON.parse(localStorage.getItem('user')) || null,
   token: localStorage.getItem('token') || null,
@@ -223,6 +296,47 @@ const authSlice = createSlice({
         state.user = action.payload.user
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Update profile
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false
+        state.user = action.payload.user
+        state.error = null
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Change password
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false
+        state.error = null
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Upload avatar
+      .addCase(uploadAvatar.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        state.loading = false
+        state.user = action.payload.user
+        state.error = null
+      })
+      .addCase(uploadAvatar.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

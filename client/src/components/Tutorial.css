@@ -1,0 +1,346 @@
+.tutorial-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  color: #2c2820;
+}
+
+.tutorial-hero {
+  text-align: center;
+  margin-bottom: 4rem;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #faf8f5 0%, #f5f1e8 100%);
+  border-radius: 20px;
+}
+
+.tutorial-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #2c2820;
+  margin-bottom: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.tutorial-subtitle {
+  font-size: 1.25rem;
+  color: #6b5d4f;
+  font-weight: 400;
+}
+
+.tutorial-section {
+  margin-bottom: 4rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.section-number {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #c9a961 0%, #d4af37 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(201, 169, 97, 0.3);
+}
+
+.section-header h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #2c2820;
+  margin: 0;
+}
+
+.section-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.section-text {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #4a4238;
+  margin-bottom: 2rem;
+}
+
+.video-wrapper {
+  margin: 2rem 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.video-wrapper iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+}
+
+.info-box {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+  border-left: 4px solid #d4af37;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 2rem;
+}
+
+.info-box h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #8b6f47;
+  margin-bottom: 0.5rem;
+}
+
+.info-box p {
+  font-size: 1rem;
+  color: #6b5d4f;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.rule-card {
+  background: linear-gradient(135deg, #faf8f5 0%, #f5f1e8 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid #e8dcc8;
+  transition: all 0.3s ease;
+}
+
+.rule-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #d4af37;
+}
+
+.rule-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.rule-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c2820;
+  margin-bottom: 0.75rem;
+}
+
+.rule-card p {
+  font-size: 1rem;
+  color: #6b5d4f;
+  line-height: 1.6;
+}
+
+.strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.strategy-item {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.strategy-number {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #8b6f47 0%, #a0826b 100%);
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.strategy-content h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c2820;
+  margin-bottom: 0.5rem;
+}
+
+.strategy-content p {
+  font-size: 1rem;
+  color: #6b5d4f;
+  line-height: 1.7;
+}
+
+.examples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.example-card {
+  background: linear-gradient(135deg, #f5f1e8 0%, #ebe4d3 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid #d4af37;
+}
+
+.example-card h4 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c2820;
+  margin-bottom: 0.5rem;
+}
+
+.example-description {
+  font-size: 1rem;
+  color: #8b6f47;
+  margin-bottom: 1rem;
+}
+
+.example-info {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #6b5d4f;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.tip-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid #e8dcc8;
+  transition: all 0.3s ease;
+}
+
+.tip-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #c9a961;
+}
+
+.tip-emoji {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.tip-card h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2c2820;
+  margin-bottom: 0.5rem;
+}
+
+.tip-card p {
+  font-size: 0.95rem;
+  color: #6b5d4f;
+  line-height: 1.6;
+}
+
+.tutorial-cta {
+  text-align: center;
+  background: linear-gradient(135deg, #2c2820 0%, #3d3530 100%);
+  color: white;
+  padding: 4rem 2rem;
+  border-radius: 20px;
+  margin-top: 4rem;
+}
+
+.tutorial-cta h3 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.tutorial-cta p {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+}
+
+.cta-button {
+  background: linear-gradient(135deg, #c9a961 0%, #d4af37 100%);
+  color: white;
+  border: none;
+  padding: 1.25rem 3rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(201, 169, 97, 0.4);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 169, 97, 0.6);
+  background: linear-gradient(135deg, #d4af37 0%, #e6c04f 100%);
+}
+
+@media (max-width: 768px) {
+  .tutorial-title {
+    font-size: 2rem;
+  }
+
+  .tutorial-subtitle {
+    font-size: 1rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .section-content {
+    padding: 1.5rem;
+  }
+
+  .rules-grid,
+  .examples-grid,
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-cta h3 {
+    font-size: 1.75rem;
+  }
+
+  .tutorial-cta p {
+    font-size: 1rem;
+  }
+}

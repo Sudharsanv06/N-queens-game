@@ -7,10 +7,10 @@ import Contact from './components/Contact';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import Play from './pages/Play';
 import Stats from './pages/Stats';
 import Leaderboard from './pages/Leaderboard';
 import ProtectedRoute from './components/ProtectedRoute';
-import Board from './components/Board';
 import GameBoard from './components/GameBoard';
 import GameModeSelection from './components/GameModeSelection';
 import RegisteredGameModes from './components/RegisteredGameModes';
@@ -52,6 +52,9 @@ const Router = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      
+      {/* Play page - all game modes */}
+      <Route path="/play" element={<Play />} />
       
       {/* Protected User routes */}
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -104,8 +107,9 @@ const Router = () => {
       <Route path="/game/time-trial" element={<GameBoard />} />
       <Route path="/game/puzzle-mode" element={<GameBoard />} />
       <Route path="/game/multiplayer" element={<GameBoard />} />
-      <Route path="/game/:mode" element={<Board />} />
-      <Route path="/game" element={<Board />} />
+      <Route path="/game/:mode" element={<GameBoard />} />
+      <Route path="/game" element={<GameBoard />} />
+      <Route path="/offline" element={<GameBoard />} />
     </Routes>
   );
 };

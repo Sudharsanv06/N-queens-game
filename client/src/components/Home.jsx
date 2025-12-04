@@ -1,646 +1,155 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchDailyChallenge } from '../store/slices/gameSlice';
-import { OfflineAuth } from '../utils/offlineAuth';
-import Layout from "./Layout";
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FaPlay, FaBook, FaTrophy, FaBrain, FaChess } from 'react-icons/fa';
 import './Home.css';
 
-const Home = () => {
-  const [user, setUser] = useState(null);
-  const [completedChallenges, setCompletedChallenges] = useState({});
-
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const dailyChallenge = useSelector((state) => state.game.dailyChallenge);
-
-  // Load completed challenges from localStorage (user-specific)
-  const loadCompletedChallenges = () => {
-    const currentUser = OfflineAuth.getCurrentUser();
-    if (currentUser) {
-      // Clear global contaminated data (one-time cleanup)
-      if (localStorage.getItem('completedChallenges')) {
-        console.log('Clearing contaminated global completion data');
-        localStorage.removeItem('completedChallenges');
-      }
-      
-      // Load user-specific completions (same key as GameBoard uses)
-      const userCompletions = localStorage.getItem(`userCompletions_${currentUser.id}`);
-      if (userCompletions) {
-        const completions = JSON.parse(userCompletions);
-        // Convert to the format expected by Home component
-        const displayCompletions = {};
-        Object.keys(completions).forEach(key => {
-          if (key.startsWith('level_')) {
-            displayCompletions[key] = completions[key].completedAt || completions[key];
-          }
-        });
-        setCompletedChallenges(displayCompletions);
-      } else {
-        setCompletedChallenges({});
-      }
-    } else {
-      // No user logged in, reset completions
-      setCompletedChallenges({});
-    }
-  };
-
-  // Check and update user state using OfflineAuth
-  const checkUserStatus = () => {
-    const userData = OfflineAuth.getCurrentUser();
-    const previousUserId = user ? user.id : null;
-    const currentUserId = userData ? userData.id : null;
-    
-    // If user changed, clear previous user's data
-    if (previousUserId !== currentUserId) {
-      setCompletedChallenges({});
-      console.log('User changed, clearing completion data');
-    }
-    
-    setUser(userData);
-    
-    // Load new user's completion data
-    if (userData) {
-      setTimeout(() => loadCompletedChallenges(), 100);
-    }
-  };
-
-  // Scroll to quick challenges section
-  const scrollToQuickChallenges = () => {
-    const quickChallengesSection = document.getElementById('quick-challenges-section');
-    if (quickChallengesSection) {
-      quickChallengesSection.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    } else {
-      // If user is not logged in, redirect to login
-      navigate('/login');
-    }
-  };
+function Home() {
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Initial check
-    checkUserStatus();
-
-    loadCompletedChallenges();
-
-    // Set up event listeners
-    const handleStorageChange = () => {
-      checkUserStatus();
-      loadCompletedChallenges(); // Refresh completion status on storage change
-    };
-    const handleCustomLogout = () => {
-      // Clear completions when user logs out to prevent data bleeding
-      setCompletedChallenges({});
-      checkUserStatus();
-    };
-    const handleLevelCompleted = (event) => {
-      // Refresh completion status when a level is completed
-      loadCompletedChallenges();
-      console.log(`Level ${event.detail.level} completed!`);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('customLogout', handleCustomLogout);
-    window.addEventListener('levelCompleted', handleLevelCompleted);
-
-    // Fetch today's daily challenge from API if authenticated
-    if (OfflineAuth.isAuthenticated()) {
-      dispatch(fetchDailyChallenge());
-    }
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('customLogout', handleCustomLogout);
-      window.removeEventListener('levelCompleted', handleLevelCompleted);
-    };
-  }, [dispatch]);
-
-  // Mark level as completed
-  const markLevelComplete = (level) => {
-    const currentUser = OfflineAuth.getCurrentUser();
-    if (!currentUser) return;
-    
-    // Update UI state immediately
-    const newCompleted = { ...completedChallenges, [`level_${level}`]: new Date().toISOString() };
-    setCompletedChallenges(newCompleted);
-    
-    // Save ONLY to user-specific key (no global save!)
-    const userCompletions = JSON.parse(localStorage.getItem(`userCompletions_${currentUser.id}`) || '{}');
-    userCompletions[`level_${level}`] = {
-      completedAt: new Date().toISOString(),
-      points: [100, 120, 150, 180, 220, 250, 280, 300, 350, 500][parseInt(level) - 1] || 500,
-      manuallyMarked: true // Flag to indicate this was marked manually, not through GameBoard
-    };
-    localStorage.setItem(`userCompletions_${currentUser.id}`, JSON.stringify(userCompletions));
-  };
-
-  // Get user's current level (highest completed + 1)
-  const getCurrentLevel = () => {
-    const completedLevels = Object.keys(completedChallenges)
-      .filter(key => key.startsWith('level_'))
-      .map(key => parseInt(key.replace('level_', '')))
-      .sort((a, b) => b - a);
-    
-    return completedLevels.length > 0 ? completedLevels[0] + 1 : 1;
-  };
-
-  // Get user's rank based on completed levels
-  const getUserRank = () => {
-    const currentLevel = getCurrentLevel() - 1;
-    if (currentLevel >= 10) return { rank: 'Crown Master', icon: '👑', color: '#9B59B6' };
-    if (currentLevel >= 8) return { rank: 'Diamond Elite', icon: '💎', color: '#B9F2FF' };
-    if (currentLevel >= 6) return { rank: 'Gold Master', icon: '🥇', color: '#FFD700' };
-    if (currentLevel >= 4) return { rank: 'Silver Elite', icon: '🥈', color: '#C0C0C0' };
-    if (currentLevel >= 2) return { rank: 'Bronze Elite', icon: '🥉', color: '#CD7F32' };
-    return { rank: 'Rookie', icon: '🌟', color: '#4CAF50' };
-  };
-
-  // DEBUG: Clear contaminated global data
-  const clearContaminatedData = () => {
-    const confirm = window.confirm('🧹 Clear contaminated completion data?\n\nThis will remove global completions that are causing accounts to share data.\n\nClick OK to proceed.');
-    if (confirm) {
-      // Clear global contaminated data
-      if (localStorage.getItem('completedChallenges')) {
-        localStorage.removeItem('completedChallenges');
-        console.log('✅ Cleared contaminated global completedChallenges');
-      }
-      
-      // Reload user's specific data
-      loadCompletedChallenges();
-      
-      alert('✅ Contaminated data cleared!\n\nNow logout and login with different accounts - they should show separate progress.');
-    }
-  };
-
-  const gameModes = [
-    {
-      id: 'classic',
-      name: 'Classic Mode',
-      description: 'Traditional N-Queens puzzle with customizable board sizes from 4x4 to 10x10',
-      difficulty: 'Easy to Expert',
-      icon: '♛',
-      color: '#4CAF50',
-      bgColor: '#E8F5E8',
-      features: ['Custom board sizes', 'Step-by-step hints', 'Solution validation', 'Leaderboard tracking'],
-      className: 'classic'
-    },
-    {
-      id: 'time-trial',
-      name: 'Time Trial',
-      description: 'Race against the clock to solve puzzles quickly and climb the leaderboard',
-      difficulty: 'Medium to Hard',
-      icon: '⏱️',
-      color: '#FF9800',
-      bgColor: '#FFF3E0',
-      features: ['Timer countdown', 'Score multipliers', 'Global rankings', 'Speed bonuses'],
-      className: 'time-trial'
-    },
-    {
-      id: 'puzzle-mode',
-      name: 'Puzzle Mode',
-      description: 'Pre-designed challenging puzzles with unique solutions and special constraints',
-      difficulty: 'Hard',
-      icon: '🧩',
-      color: '#9C27B0',
-      bgColor: '#F3E5F5',
-      features: ['Unique puzzle sets', 'Achievement system', 'Daily challenges', 'Progressive difficulty'],
-      className: 'puzzle-mode'
-    },
-    {
-      id: 'multiplayer',
-      name: 'Multiplayer',
-      description: 'Compete with friends in real-time puzzle solving battles',
-      difficulty: 'All Levels',
-      icon: '👥',
-      color: '#2196F3',
-      bgColor: '#E3F2FD',
-      features: ['Real-time competition', 'Friend challenges', 'Tournaments', 'Live rankings'],
-      className: 'multiplayer'
-    }
-  ];
-
-  const quickGames = [
-    { 
-      size: 4, 
-      name: '4×4 Classic', 
-      difficulty: 'Beginner', 
-      time: '1 min', 
-      color: '#4CAF50',
-      description: 'Perfect for beginners',
-      className: 'size-4'
-    },
-    { 
-      size: 6, 
-      name: '6×6 Puzzle', 
-      difficulty: 'Intermediate', 
-      time: '3 min', 
-      color: '#FF9800',
-      description: 'Step up the challenge',
-      className: 'size-6'
-    },
-    { 
-      size: 8, 
-      name: '8×8 Challenge', 
-      difficulty: 'Advanced', 
-      time: '5 min', 
-      color: '#2196F3',
-      description: 'Classic chess board',
-      className: 'size-8'
-    },
-    { 
-      size: 10, 
-      name: '10×10 Expert', 
-      difficulty: 'Master', 
-      time: '10 min', 
-      color: '#9C27B0',
-      description: 'Ultimate challenge',
-      className: 'size-10'
-    }
-  ];
-
-  const levelChallenges = [
-    { 
-      level: 1, 
-      size: 4, 
-      difficulty: 'Bronze', 
-      points: 100,
-      icon: '🥉',
-      color: '#CD7F32',
-      description: 'Bronze Level Challenge'
-    },
-    { 
-      level: 2, 
-      size: 5, 
-      difficulty: 'Bronze', 
-      points: 120,
-      icon: '🥉',
-      color: '#CD7F32',
-      description: 'Bronze Advanced'
-    },
-    { 
-      level: 3, 
-      size: 6, 
-      difficulty: 'Silver', 
-      points: 150,
-      icon: '🥈',
-      color: '#C0C0C0',
-      description: 'Silver Level Entry'
-    },
-    { 
-      level: 4, 
-      size: 6, 
-      difficulty: 'Silver', 
-      points: 180,
-      icon: '🥈',
-      color: '#C0C0C0',
-      description: 'Silver Advanced'
-    },
-    { 
-      level: 5, 
-      size: 7, 
-      difficulty: 'Gold', 
-      points: 220,
-      icon: '🥇',
-      color: '#FFD700',
-      description: 'Gold Level Entry'
-    },
-    { 
-      level: 6, 
-      size: 8, 
-      difficulty: 'Gold', 
-      points: 250,
-      icon: '🥇',
-      color: '#FFD700',
-      description: 'Gold Master'
-    },
-    { 
-      level: 7, 
-      size: 9, 
-      difficulty: 'Diamond', 
-      points: 280,
-      icon: '💎',
-      color: '#B9F2FF',
-      description: 'Diamond Elite'
-    },
-    { 
-      level: 8, 
-      size: 10, 
-      difficulty: 'Diamond', 
-      points: 300,
-      icon: '💎',
-      color: '#B9F2FF',
-      description: 'Diamond Master'
-    },
-    { 
-      level: 9, 
-      size: 11, 
-      difficulty: 'Crown', 
-      points: 350,
-      icon: '👑',
-      color: '#9B59B6',
-      description: 'Royal Challenge'
-    },
-    { 
-      level: 10, 
-      size: 12, 
-      difficulty: 'Crown', 
-      points: 500,
-      icon: '👑',
-      color: '#9B59B6',
-      description: 'Ultimate Crown Master'
-    }
-  ];
-
-  const stats = [
-    { 
-      value: '10,000+', 
-      label: 'Daily Players', 
-      icon: '👥'
-    },
-    { 
-      value: '500,000+', 
-      label: 'Puzzles Solved', 
-      icon: '✅'
-    },
-    { 
-      value: '50+', 
-      label: 'Countries', 
-      icon: '🌎'
-    },
-    { 
-      value: '24/7', 
-      label: 'Availability', 
-      icon: '⏰'
-    }
-  ];
+    setIsVisible(true);
+  }, []);
 
   return (
-    <Layout>
-      <div className="home-page">
-        <section className="hero-section">
-          <div className="hero-background">
-            <div className="particle particle-1"></div>
-            <div className="particle particle-2"></div>
-            <div className="particle particle-3"></div>
-            <div className="particle particle-4"></div>
-            <div className="particle particle-5"></div>
-            <div className="particle particle-6"></div>
-          </div>
-          <div className="hero-content">
-            <h1><span className="gradient-text">N-Queens Challenge</span></h1>
-            <p className="hero-subtitle">Master the classic chess puzzle with strategic thinking and problem-solving skills.</p>
-            <div className="hero-actions">
-              <button onClick={scrollToQuickChallenges} className="hero-btn primary">
-                <span className="btn-icon">🎮</span>
-                Start Playing
-              </button>
-              <Link to="/about" className="hero-btn secondary">
-                <span className="btn-icon">📚</span>
-                Learn More
+    <div className="home">
+      {/* Background Decorations */}
+      <div className="bg-decoration decoration-1"></div>
+      <div className="bg-decoration decoration-2"></div>
+      <div className="bg-decoration decoration-3"></div>
+
+      {/* Hero Section */}
+      <section className={`hero-container ${isVisible ? 'visible' : ''}`}>
+        <div className="hero-content">
+          <div className="hero-text">
+            <div className="hero-badge">
+              <FaChess className="badge-icon" />
+              <span>Classic Strategy Puzzle</span>
+            </div>
+            
+            <h1 className="hero-title">
+              N-Queens
+              <span className="title-highlight"> Challenge</span>
+            </h1>
+            
+            <p className="hero-subtitle">
+              Master the timeless chess puzzle that challenges your logic and strategic thinking. 
+              Place queens on the board so none can attack each other.
+            </p>
+
+            <div className="cta-buttons">
+              <Link to="/play" className="btn btn-primary">
+                <FaPlay className="btn-icon" />
+                <span>Start Playing</span>
+              </Link>
+              <Link to="/tutorial" className="btn btn-glass">
+                <FaBook className="btn-icon" />
+                <span>Learn More</span>
               </Link>
             </div>
+
+            <div className="hero-stats">
+              <div className="stat-item">
+                <FaBrain className="stat-icon" />
+                <div className="stat-text">
+                  <span className="stat-number">∞</span>
+                  <span className="stat-label">Puzzles</span>
+                </div>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-item">
+                <FaTrophy className="stat-icon" />
+                <div className="stat-text">
+                  <span className="stat-number">4-12</span>
+                  <span className="stat-label">Board Sizes</span>
+                </div>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-item">
+                <FaChess className="stat-icon" />
+                <div className="stat-text">
+                  <span className="stat-number">Classic</span>
+                  <span className="stat-label">Gameplay</span>
+                </div>
+              </div>
+            </div>
           </div>
+
           <div className="hero-visual">
-            <div className="chess-animation">
+            <div className="board-container">
+              <div className="board-glow"></div>
               <div className="chess-board">
-                {[...Array(8)].map((_, row) => (
-                  [...Array(8)].map((_, col) => (
-                    <div 
-                      key={`${row}-${col}`} 
-                      className={`chess-square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`}
-                    >
-                      {(row === 0 && col === 0) || 
-                       (row === 1 && col === 2) || 
-                       (row === 2 && col === 5) || 
-                       (row === 3 && col === 7) || 
-                       (row === 4 && col === 1) || 
-                       (row === 5 && col === 3) || 
-                       (row === 6 && col === 6) || 
-                       (row === 7 && col === 4) ? '♛' : ''}
-                    </div>
-                  ))
-                ))}
-              </div>
-              <div className="chess-solution-label">Sample 8-Queens Solution</div>
-            </div>
-          </div>
-        </section>
-
-        {user && (
-          <section className="daily-challenges-section">
-            <div className="section-container">
-              <h2>Level Challenges</h2>
-              <p className="section-subtitle">
-                Progress through 10 challenging levels from Bronze to Crown
-              </p>
-              
-              <div className="level-challenges-grid">
-                {levelChallenges.map((challenge, index) => {
-                  const isCompleted = completedChallenges[`level_${challenge.level}`];
-                  
-                  return (
-                    <div 
-                      key={challenge.level} 
-                      className={`level-challenge-card ${isCompleted ? 'completed' : ''}`}
-                    >
-                      <Link 
-                        to={`/game/classic?mode=level&level=${challenge.level}&size=${challenge.size}`} 
-                        className="challenge-link"
-                      >
-                        <div className="challenge-header">
-                          <div className="challenge-icon" style={{ color: challenge.color }}>
-                            {challenge.icon}
-                          </div>
-                          <div className="challenge-level">Level {challenge.level}</div>
-                          {isCompleted && <div className="completion-check">✅</div>}
+                {Array(8).fill(null).map((_, row) => (
+                  <div key={row} className="board-row">
+                    {Array(8).fill(null).map((_, col) => {
+                      const isQueen = 
+                        (row === 0 && col === 0) || 
+                        (row === 1 && col === 4) || 
+                        (row === 2 && col === 7) || 
+                        (row === 3 && col === 5) ||
+                        (row === 4 && col === 2) ||
+                        (row === 5 && col === 6) ||
+                        (row === 6 && col === 1) ||
+                        (row === 7 && col === 3);
+                      
+                      return (
+                        <div 
+                          key={col}
+                          className={`board-cell ${(row + col) % 2 === 0 ? 'light' : 'dark'} ${isQueen ? 'has-queen' : ''}`}
+                          style={{ animationDelay: `${(row * 8 + col) * 0.01}s` }}
+                        >
+                          {isQueen && (
+                            <span className="queen-piece" style={{ animationDelay: `${(row * 8 + col) * 0.02}s` }}>
+                              ♛
+                            </span>
+                          )}
                         </div>
-                        <div className="challenge-content">
-                          <div className="challenge-size">{challenge.size}×{challenge.size}</div>
-                          <div className="challenge-difficulty" style={{ backgroundColor: challenge.color, color: '#fff' }}>
-                            {challenge.difficulty}
-                          </div>
-                          <div className="challenge-description">{challenge.description}</div>
-                          <div className="challenge-points">+{challenge.points} pts</div>
-                        </div>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {user && (
-          <section id="quick-challenges-section" className="quick-games-section">
-            <div className="section-container">
-              <h2>Quick Start Challenges</h2>
-              <p className="section-subtitle">
-                Jump right into curated puzzles
-              </p>
-              
-              <div className="quick-games-grid">
-                {quickGames.map((game) => (
-                  <Link 
-                    key={game.size} 
-                    to={`/game/classic?size=${game.size}`} 
-                    className="quick-game-card"
-                  >
-                    <div className="game-image-container" style={{ backgroundColor: game.color }}>
-                      <div className="game-overlay">
-                        <div className="game-size">{game.size}×{game.size}</div>
-                        <div className="game-description">{game.description}</div>
-                      </div>
-                    </div>
-                    <div className="game-info">
-                      <h3>{game.name}</h3>
-                      <div className="game-meta">
-                        <span className="difficulty-badge" style={{ backgroundColor: game.color }}>
-                          {game.difficulty}
-                        </span>
-                        <span className="time-estimate">{game.time}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {user && (
-          <section className="game-modes-section">
-            <div className="section-container">
-              <h2>Explore Game Modes</h2>
-              <p className="section-subtitle">Different ways to challenge your strategic thinking</p>
-              
-              <div className="game-modes-grid">
-                {gameModes.map((mode) => (
-                  <div key={mode.id} className="game-mode-card">
-                    <div className="mode-image-container" style={{ backgroundColor: mode.color }}>
-                      <div className="mode-icon">{mode.icon}</div>
-                      <h3 className="mode-title">{mode.name}</h3>
-                    </div>
-                    <div className="mode-content">
-                      <p className="mode-description">{mode.description}</p>
-                      <div className="mode-details">
-                        <span className="difficulty" style={{ backgroundColor: mode.color }}>
-                          {mode.difficulty}
-                        </span>
-                      </div>
-                      <ul className="mode-features">
-                        {mode.features.map((feature, index) => (
-                          <li key={index}>
-                            <span className="feature-icon" style={{ color: mode.color }}>✓</span>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link 
-                        to={`/game/${mode.id}?size=8`} 
-                        className="play-mode-btn"
-                        style={{ backgroundColor: mode.color }}
-                      >
-                        Play {mode.name.split(' ')[0]}
-                      </Link>
-                    </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
+              <div className="board-label">8-Queens Solution</div>
             </div>
-          </section>
-        )}
+          </div>
+        </div>
+      </section>
 
-        <section className="stats-section">
-          <div className="section-container">
-            <div className="stats-grid">
-              {stats.map((stat, index) => (
-                <div key={index} className="stat-card" style={{ 
-                  backgroundColor: '#ffffff', 
-                  color: '#000000',
-                  border: '2px solid #ddd',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  borderRadius: '12px'
-                }}>
-                  <div className="stat-icon" style={{ 
-                    fontSize: '2.5rem', 
-                    color: '#000000', 
-                    marginBottom: '12px' 
-                  }}>{stat.icon}</div>
-                  <div className="stat-number" style={{ 
-                    color: '#000000', 
-                    fontWeight: '900',
-                    fontSize: '2.2rem',
-                    marginBottom: '8px',
-                    lineHeight: '1'
-                  }}>{stat.value}</div>
-                  <div className="stat-label" style={{ 
-                    color: '#000000',
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px'
-                  }}>{stat.label}</div>
-                </div>
-              ))}
+      {/* Features Section */}
+      <section className="features-section">
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <FaBrain className="feature-icon" />
             </div>
+            <h3 className="feature-title">Strategic Thinking</h3>
+            <p className="feature-description">
+              Develop problem-solving skills and logical reasoning through elegant puzzle mechanics.
+            </p>
           </div>
-        </section>
 
-        <footer className="enhanced-footer">
-          <div className="footer-content">
-            <div className="footer-section">
-              <h3>N-Queens Challenge</h3>
-              <p>Master the legendary chess puzzle with our modern, interactive platform.</p>
-              <div className="social-links">
-                <a href="#" className="social-link">📘</a>
-                <a href="#" className="social-link">🐦</a>
-                <a href="#" className="social-link">📷</a>
-                <a href="#" className="social-link">💼</a>
-              </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <FaTrophy className="feature-icon" />
             </div>
-            
-            <div className="footer-section">
-              <h4>Game Modes</h4>
-              <ul>
-                <li><Link to="/game/classic">Classic Mode</Link></li>
-                <li><Link to="/game/time-trial">Time Trial</Link></li>
-                <li><Link to="/game/puzzle-mode">Puzzle Mode</Link></li>
-                <li><Link to="/game/multiplayer">Multiplayer</Link></li>
-              </ul>
-            </div>
-            
-            <div className="footer-section">
-              <h4>Resources</h4>
-              <ul>
-                <li><Link to="/about">About</Link></li>
-                <li><Link to="/tutorial">Tutorial</Link></li>
-                <li><Link to="/leaderboard">Leaderboard</Link></li>
-                <li><Link to="/contact">Contact</Link></li>
-              </ul>
-            </div>
-            
-            <div className="footer-section">
-              <h4>Support</h4>
-              <ul>
-                <li><a href="#help">Help Center</a></li>
-                <li><a href="#faq">FAQ</a></li>
-                <li><a href="#privacy">Privacy Policy</a></li>
-                <li><a href="#terms">Terms of Service</a></li>
-              </ul>
-            </div>
+            <h3 className="feature-title">Track Progress</h3>
+            <p className="feature-description">
+              Compete on leaderboards and earn achievements as you master increasingly complex boards.
+            </p>
           </div>
-          
-          <div className="footer-bottom">
-            <div className="footer-divider"></div>
-            <p>&copy; 2025 N-Queens Challenge. All rights reserved. Built with ❤️ for puzzle enthusiasts.</p>
+
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <FaChess className="feature-icon" />
+            </div>
+            <h3 className="feature-title">Classic Puzzle</h3>
+            <p className="feature-description">
+              Experience the timeless chess challenge that has fascinated mathematicians for centuries.
+            </p>
           </div>
-        </footer>
-      </div>
-    </Layout>
+        </div>
+      </section>
+    </div>
   );
-};
+}
 
 export default Home;

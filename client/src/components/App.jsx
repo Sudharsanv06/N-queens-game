@@ -9,20 +9,22 @@ import { OfflineGameStore } from '../utils/offlineStore'
 import ErrorBoundary from './ErrorBoundary'
 
 // Import components
+import Layout from './Layout'
 import Home from './Home'
-import Login from './Login'
-import Signup from './Signup'
-import GameRoute from './GameRoute'
-import GameBoard from './GameBoard'
-import OfflineNQueensGame from './OfflineNQueensGame'
+import Login from '../pages/Login'
+import Signup from '../pages/Signup'
+import Dashboard from '../pages/Dashboard'
+import Play from '../pages/Play'
+import BoardSizeSelector from '../pages/BoardSizeSelector'
+import ClassicGame from '../pages/ClassicGame'
+import TimeTrialSelector from '../pages/TimeTrialSelector'
+import TimeTrialGame from '../pages/TimeTrialGame'
 import MultiplayerGame from './MultiplayerGame'
 import DailyChallenge from './DailyChallenge'
 import Leaderboard from './Leaderboard'
 import About from './About'
 import Contact from './Contact'
 import Tutorial from './Tutorial'
-import GameModeSelection from './GameModeSelection'
-import RegisteredGameModes from './RegisteredGameModes'
 import AnalyticsRoute from './AnalyticsRoute'
 import AnalyticsDashboard from './AnalyticsDashboard'
 import AchievementsPage from '../pages/AchievementsPage'
@@ -148,31 +150,35 @@ const App = () => {
           <div className="App">
             <AnalyticsRoute>
             <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Home />} />
+              {/* Routes with Layout (Navbar + Footer) */}
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/play" element={<Play />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/tutorial" element={<Tutorial />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/achievements" element={<AchievementsPage />} />
+                <Route path="/badges" element={<BadgesPage />} />
+                <Route path="/rewards/history" element={<RewardHistoryPage />} />
+              </Route>
+
+              {/* Auth routes without Layout */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/tutorial" element={<Tutorial />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
+              
+              {/* Game routes without Layout */}
               <Route path="/analytics" element={<AnalyticsDashboard />} />
               
-              {/* Game routes */}
-              <Route path="/game-modes" element={<GameModeSelection />} />
-              <Route path="/registered-game-modes" element={<RegisteredGameModes />} />
+              {/* Classic Mode - Two Page Flow */}
+              <Route path="/board-size-selector" element={<BoardSizeSelector />} />
+              <Route path="/classic-game" element={<ClassicGame />} />
               
-              {/* Specific game mode routes */}
-              <Route path="/game/free-trial" element={<GameBoard />} />
-              <Route path="/game/classic" element={<GameBoard />} />
-              <Route path="/game/time-trial" element={<GameBoard />} />
-              <Route path="/game/puzzle-mode" element={<GameBoard />} />
-              <Route path="/game/multiplayer" element={<GameBoard />} />
+              {/* Time Trial Mode - Two Page Flow */}
+              <Route path="/time-trial-selector" element={<TimeTrialSelector />} />
+              <Route path="/time-trial-game" element={<TimeTrialGame />} />
               
-              {/* Fallback game routes */}
-              <Route path="/game" element={<GameRoute />} />
-              <Route path="/play" element={<GameRoute />} />
-              <Route path="/offline-game" element={<OfflineNQueensGame />} />
               <Route path="/multiplayer" element={<MultiplayerGame />} />
               <Route path="/daily-challenge" element={<DailyChallengePage />} />
               

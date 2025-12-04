@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* Import from Login.css base styles */
+@import './Login.css';
+
+/* Additional Signup-specific styles */
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #8b6f47;
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.terms-text {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #8b6f47;
+  margin-top: 24px;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+.terms-link {
+  color: #c9a961;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.terms-link:hover {
+  color: #d4af37;
+  text-decoration: underline;
+}
+
+/* Signup specific auth-card adjustment */
+.auth-page .auth-card {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.auth-page .auth-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-page .auth-card::-webkit-scrollbar-track {
+  background: rgba(201, 169, 97, 0.1);
+  border-radius: 3px;
+}
+
+.auth-page .auth-card::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 97, 0.3);
+  border-radius: 3px;
+}
+
+.auth-page .auth-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 97, 0.5);
+}
+
+/* Responsive adjustments for signup */
+@media (max-width: 640px) {
+  .auth-page .auth-form .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-hint {
+    font-size: 0.7rem;
+  }
+
+  .terms-text {
+    font-size: 0.7rem;
+    line-height: 1.5;
+  }
+}

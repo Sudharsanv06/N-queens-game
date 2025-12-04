@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Trophy, TrendingUp, TrendingDown, Crown, Target, ArrowRight, X } from 'lucide-react'
-import { closeResultModal } from '../../store/slices/multiplayerSliceNew'
+import { closeResultModal } from '../../store/slices/multiplayerSlice'
 import Confetti from 'react-confetti'
 import { useWindowSize } from 'react-use'
 

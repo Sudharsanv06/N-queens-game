@@ -1,5 +1,5 @@
 import express from 'express'
-import { signup, login, refreshToken, logout, getCurrentUser } from '../controllers/authController.js'
+import { signup, login, refreshToken, logout, getCurrentUser, updateProfile, changePassword, uploadAvatar, upload } from '../controllers/authController.js'
 import { authRequired } from '../middleware/auth.js'
 import { rateLimit } from 'express-rate-limit'
 
@@ -25,5 +25,8 @@ router.post('/refresh', refreshToken)
 // Protected routes
 router.post('/logout', authRequired, logout)
 router.get('/me', authRequired, getCurrentUser)
+router.put('/profile', authRequired, updateProfile)
+router.put('/change-password', authRequired, changePassword)
+router.post('/upload-avatar', authRequired, upload.single('avatar'), uploadAvatar)
 
 export default router

@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { fetchLeaderboard } from '../store/slices/gameSlice';
 import { OfflineGameStore } from '../utils/offlineStore';
 import { OfflineAuth } from '../utils/offlineAuth';
-import Layout from './Layout';
+import { FaTrophy, FaMedal, FaCrown, FaStar, FaChartLine, FaFire, FaAward } from 'react-icons/fa';
 import './Leaderboard.css';
+
 const Leaderboard = () => {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   const onlineLeaderboard = useSelector((state) => state.game.leaderboard);
   const loadingFromStore = useSelector((state) => state.game.loading.leaderboard);
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useState(searchParams.get('mode') || 'all');
   const [leaderboard, setLeaderboard] = useState([]);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'classic', label: 'Classic (4x4)' },
-    { value: 'modern', label: 'Modern (5x5-6x6)' },
-    { value: 'adventure', label: 'Adventure (7x7-8x8)' },
-    { value: 'expert', label: 'Expert (9x9-10x10)' }
+    { value: 'all', label: 'All Players', icon: FaTrophy },
+    { value: 'classic', label: 'Classic Mode', icon: FaStar },
+    { value: 'time-trial', label: 'Time Trial', icon: FaChartLine },
+    { value: 'modern', label: 'Modern Mode', icon: FaMedal },
+    { value: 'adventure', label: 'Adventure', icon: FaCrown },
+    { value: 'expert', label: 'Expert Level', icon: FaFire }
   ];
 
   // Get offline leaderboard data with level completion tracking
@@ -67,27 +72,24 @@ const Leaderboard = () => {
 
         // Calculate scores based on both games and level completions
         const gameScores = userGames.map(game => {
-          // If the game already has a calculated score, use it
           if (game.score && game.score > 0) {
             return game.score;
           }
           
-          // Otherwise calculate score (for backward compatibility)
-          let score = 1000; // Base score
+          let score = 1000;
           if (game.timeElapsed) {
-            score += Math.max(0, 500 - game.timeElapsed * 2); // Speed bonus
+            score += Math.max(0, 500 - game.timeElapsed * 2);
           }
           if (game.moves) {
-            score -= game.moves * 10; // Move penalty
+            score -= game.moves * 10;
           }
           if (game.hints) {
-            score -= game.hints * 100; // Hint penalty
+            score -= game.hints * 100;
           }
-          score += (game.boardSize || 4) * 50; // Difficulty bonus
-          return Math.max(100, score); // Minimum score
+          score += (game.boardSize || 4) * 50;
+          return Math.max(100, score);
         });
 
-        // Add level completion bonus scores from user-specific data
         const levelBonusScore = completedLevels.reduce((total, level) => {
           const levelData = userCompletions[`level_${level}`];
           const levelPoints = levelData ? levelData.points : ([100, 120, 150, 180, 220, 250, 280, 300, 350, 500][level - 1] || 500);
@@ -99,83 +101,72 @@ const Leaderboard = () => {
         const avgScore = gameScores.length > 0 ? gameScores.reduce((a, b) => a + b, 0) / gameScores.length : 0;
         const avgTime = stats.gamesWon > 0 ? stats.totalTime / stats.gamesWon : 0;
 
-        // Get user's rank based on completed levels
-        const getUserRank = () => {
-          if (highestLevel >= 10) return { rank: 'Crown Master', icon: '👑', color: '#9B59B6' };
-          if (highestLevel >= 8) return { rank: 'Diamond Elite', icon: '💎', color: '#B9F2FF' };
-          if (highestLevel >= 6) return { rank: 'Gold Master', icon: '🥇', color: '#FFD700' };
-          if (highestLevel >= 4) return { rank: 'Silver Elite', icon: '🥈', color: '#C0C0C0' };
-          if (highestLevel >= 2) return { rank: 'Bronze Elite', icon: '🥉', color: '#CD7F32' };
-          return { rank: 'Rookie', icon: '🌟', color: '#4CAF50' };
+        const getRankByLevel = (level) => {
+          if (level >= 10) return 'Crown';
+          if (level >= 7) return 'Diamond';
+          if (level >= 5) return 'Gold';
+          if (level >= 3) return 'Silver';
+          return 'Bronze';
         };
-
-        const rank = getUserRank();
 
         return {
           _id: user.id,
           username: user.name,
-          bestScore: Math.round(bestScore),
-          avgScore: Math.round(avgScore),
-          totalScore: Math.round(totalScore),
-          totalGames: actualGamesWon, // Use actual games count instead of stats
+          gamesWon: actualGamesWon,
+          totalScore,
+          bestScore,
+          avgScore,
+          avgTime,
           levelsCompleted,
           highestLevel,
-          rank: rank.rank,
-          rankIcon: rank.icon,
-          rankColor: rank.color,
-          avgTime: Math.round(avgTime),
-          isCurrentUser: currentUser && currentUser.id === user.id
+          rank: getRankByLevel(highestLevel),
+          isCurrentUser: currentUser && user.id === currentUser.id
         };
-      }).filter(user => user.totalGames > 0 || user.levelsCompleted > 0); // Users who have played or completed levels
-
-      console.log('🏆 Users with games after filtering:', offlineLeaderboard.map(u => `${u.username}: ${u.totalGames} games, ${u.levelsCompleted} levels`));
-
-      // Sort by total score (games + level bonuses)
-      return offlineLeaderboard.sort((a, b) => b.totalScore - a.totalScore);
+      }).sort((a, b) => {
+        const scoreA = a.totalScore || a.bestScore || 0;
+        const scoreB = b.totalScore || b.bestScore || 0;
+        return scoreB - scoreA;
+      });
+      
+      console.log('📊 Final leaderboard:', offlineLeaderboard);
+      return offlineLeaderboard;
     } catch (error) {
-      console.error('Error getting offline leaderboard:', error);
+      console.error('Error loading offline leaderboard:', error);
       return [];
     }
   };
 
-  // Refresh leaderboard data
+  const loadLeaderboard = () => {
+    const isOffline = Capacitor.getPlatform() !== 'web' || !navigator.onLine;
+    setIsOfflineMode(isOffline);
+
+    if (isOffline) {
+      setLeaderboard(getOfflineLeaderboard());
+    } else {
+      if (onlineLeaderboard && onlineLeaderboard.length > 0) {
+        setLeaderboard(onlineLeaderboard);
+      } else {
+        dispatch(fetchLeaderboard(category));
+      }
+    }
+  };
+
   const refreshLeaderboard = () => {
-    const offlineData = getOfflineLeaderboard();
-    setLeaderboard(offlineData);
+    console.log('🔄 Refreshing leaderboard...');
+    loadLeaderboard();
   };
 
   useEffect(() => {
-    // Check if we're in offline mode (always true for now since we're using offline system)
-    const offline = true; // Capacitor.isNativePlatform() || !navigator.onLine;
-    setIsOfflineMode(offline);
-
-    const loadLeaderboard = () => {
-      if (offline) {
-        // Use offline data
-        const offlineData = getOfflineLeaderboard();
-        setLeaderboard(offlineData);
-      } else {
-        // Trigger Redux thunk to fetch leaderboard from API
-        if (category === 'all') {
-          dispatch(fetchLeaderboard());
-        } else {
-          dispatch(fetchLeaderboard(category));
-        }
-        setLeaderboard(onlineLeaderboard);
-      }
-    };
-
     loadLeaderboard();
-
-    // Listen for level completions and regular game completions to refresh leaderboard
+    
     const handleLevelCompleted = () => {
-      console.log('Level completed - refreshing leaderboard');
-      setTimeout(() => loadLeaderboard(), 500); // Small delay to ensure data is saved
+      console.log('📢 Level completed event received, refreshing leaderboard...');
+      setTimeout(() => loadLeaderboard(), 500);
     };
 
     const handleGameCompleted = () => {
-      console.log('🎮 Game completed event received - refreshing leaderboard');
-      setTimeout(() => loadLeaderboard(), 500); // Small delay to ensure data is saved
+      console.log('📢 Game completed event received, refreshing leaderboard...');
+      setTimeout(() => loadLeaderboard(), 500);
     };
 
     window.addEventListener('levelCompleted', handleLevelCompleted);
@@ -187,6 +178,10 @@ const Leaderboard = () => {
     };
   }, [category, onlineLeaderboard, dispatch]);
 
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   const loading = loadingFromStore;
 
   const formatTime = (seconds) => {
@@ -195,209 +190,221 @@ const Leaderboard = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getRankIcon = (index) => {
+    if (index === 0) return { icon: <FaCrown />, color: '#FFD700', label: 'Champion' };
+    if (index === 1) return { icon: <FaTrophy />, color: '#C0C0C0', label: '2nd Place' };
+    if (index === 2) return { icon: <FaMedal />, color: '#CD7F32', label: '3rd Place' };
+    return { icon: <FaStar />, color: '#c9a961', label: `#${index + 1}` };
+  };
+
   return (
-    <Layout>
-      <div className="leaderboard-page">
-        <div className="hero-section">
-          <div className="hero-content">
-            <h1>🏆 Leaderboard</h1>
-            <p className="hero-subtitle">Top N-Queens Players</p>
-          </div>
+    <div className="leaderboard-page">
+      {/* Background Decorations */}
+      <div className="bg-decoration decoration-1"></div>
+      <div className="bg-decoration decoration-2"></div>
+      <div className="bg-decoration decoration-3"></div>
+
+      {/* Hero Section */}
+      <div className={`leaderboard-hero ${isVisible ? 'visible' : ''}`}>
+        <div className="hero-icon-wrapper">
+          <FaTrophy className="hero-icon" />
         </div>
-        
-        <div className="leaderboard-container">
-          <div className="leaderboard-header">
-            {isOfflineMode && (
-              <div className="offline-indicator" style={{
-                backgroundColor: 'rgba(130, 150, 111, 0.1)',
-                border: '1px solid #82966f',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '20px',
-                textAlign: 'center',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <span>📱 <strong>Level-Based Rankings:</strong> Showing progress from all completed levels</span>
-                <button 
-                  onClick={refreshLeaderboard}
-                  style={{
-                    background: '#82966f',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
-                  }}
-                >
-                  🔄 Refresh
+        <h1 className="leaderboard-title">
+          Global <span className="title-highlight">Leaderboard</span>
+        </h1>
+        <p className="leaderboard-subtitle">
+          Compete with the best N-Queens solvers worldwide
+        </p>
+      </div>
+
+      <div className={`leaderboard-container ${isVisible ? 'visible' : ''}`}>
+        {/* Category Filters */}
+        <div className="category-filters">
+          {categories.map((cat) => {
+            const IconComponent = cat.icon;
+            return (
+              <button
+                key={cat.value}
+                onClick={() => !isOfflineMode && setCategory(cat.value)}
+                className={`category-btn ${category === cat.value ? 'active' : ''} ${isOfflineMode ? 'disabled' : ''}`}
+                disabled={isOfflineMode}
+              >
+                <IconComponent className="category-icon" />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Offline Mode Indicator */}
+        {isOfflineMode && (
+          <div className="info-banner">
+            <FaChartLine className="banner-icon" />
+            <span><strong>Level-Based Rankings:</strong> Showing progress from all completed levels</span>
+            <button onClick={refreshLeaderboard} className="refresh-btn">
+              <FaFire className="btn-icon" />
+              Refresh
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading rankings...</p>
+          </div>
+        ) : (
+          <>
+            {/* Empty State */}
+            {leaderboard.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <FaTrophy />
+                </div>
+                <h3>No Rankings Yet</h3>
+                <p>Complete levels to join the leaderboard!</p>
+                <div className="rank-badges">
+                  <span>🥉 Bronze</span>
+                  <span>→</span>
+                  <span>🥈 Silver</span>
+                  <span>→</span>
+                  <span>🥇 Gold</span>
+                  <span>→</span>
+                  <span>💎 Diamond</span>
+                  <span>→</span>
+                  <span>👑 Crown</span>
+                </div>
+                <button onClick={() => window.location.href = '/'} className="cta-button">
+                  Start Playing
                 </button>
               </div>
-            )}
-            
-            <div className="category-selector">
-              <label htmlFor="category">Select Category:</label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                disabled={isOfflineMode} // Disable in offline mode for now
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="loading">
-              <div className="spinner"></div>
-              <p>Loading leaderboard...</p>
-            </div>
-          ) : (
-            <div className="leaderboard-content">
-              {leaderboard.length === 0 ? (
-                <div className="no-data">
-                  <div className="no-data-icon">�</div>
-                  <h3>Complete Levels to Join the Leaderboard!</h3>
-                  <p>🎮 Solve level challenges in the Home page to appear here</p>
-                  <p>🥉 Bronze → 🥈 Silver → 🥇 Gold → 💎 Diamond → 👑 Crown</p>
-                  <button 
-                    onClick={() => window.location.href = '/'}
-                    style={{
-                      background: '#4CAF50',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '12px 24px',
-                      cursor: 'pointer',
-                      marginTop: '16px',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    Start Playing Levels
-                  </button>
-                </div>
-              ) : (
-                <div className="leaderboard-table">
-                  <div className="table-header">
-                    <div className="rank">Rank</div>
-                    <div className="player">Player</div>
-                    <div className="best-score">Total Score</div>
-                    <div className="avg-score">Levels</div>
-                    <div className="games">Games</div>
-                    <div className="avg-time">Rank</div>
-                  </div>
-                  
-                  {leaderboard.map((player, index) => (
-                    <div key={player._id} className={`table-row ${index < 3 ? `top-player rank-${index + 1}` : ''} ${player.isCurrentUser ? 'current-user' : ''}`}>
-                      <div className="rank">
-                        <div className="rank-badge">
-                          {index === 0 && <span className="medal gold">🥇</span>}
-                          {index === 1 && <span className="medal silver">🥈</span>}
-                          {index === 2 && <span className="medal bronze">🥉</span>}
-                          {index >= 3 && <span className="rank-number">#{index + 1}</span>}
-                        </div>
+            ) : (
+              <>
+                {/* Top 3 Podium */}
+                {leaderboard.length >= 3 && (
+                  <div className="podium-section">
+                    {/* 2nd Place */}
+                    <div className="podium-card rank-2">
+                      <div className="podium-rank">
+                        <FaTrophy />
+                        <span>2nd</span>
                       </div>
-                      <div className="player">
-                        <div className="player-info">
-                          <div className="player-avatar">
-                            {player.username.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="player-name">
-                            {player.username}
-                            {player.isCurrentUser && <span style={{ color: '#82966f', marginLeft: '5px' }}>(You)</span>}
-                          </span>
-                        </div>
+                      <div className="podium-avatar">{leaderboard[1].username.charAt(0).toUpperCase()}</div>
+                      <h3 className="podium-name">{leaderboard[1].username}</h3>
+                      <div className="podium-score">
+                        <FaStar className="score-icon" />
+                        {Math.round(leaderboard[1].totalScore || leaderboard[1].bestScore)}
                       </div>
-                      <div className="best-score">
-                        <span className="score-value">{Math.round(player.totalScore || player.bestScore)}</span>
-                        <span className="score-label">pts</span>
-                      </div>
-                      <div className="avg-score">
-                        <span className="score-value">{player.levelsCompleted || 0}</span>
-                        <span className="score-label">/ 10</span>
-                      </div>
-                      <div className="games">
-                        <span className="games-count">{player.totalGames}</span>
-                      </div>
-                      <div className="avg-time">
-                        <div className="rank-info" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ color: player.rankColor || '#4CAF50' }}>{player.rankIcon || '🌟'}</span>
-                          <span className="rank-name" style={{ 
-                            fontSize: '0.8rem', 
-                            color: player.rankColor || '#4CAF50',
-                            fontWeight: 'bold'
-                          }}>
-                            {player.rank || 'Rookie'}
-                          </span>
-                        </div>
+                      <div className="podium-stats">
+                        <span>{leaderboard[1].levelsCompleted || 0} Levels</span>
+                        <span>{leaderboard[1].gamesWon || 0} Wins</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          <div className="scoring-section">
-            <div className="section-container">
-              <h2>How Scoring Works</h2>
-              <p className="scoring-subtitle">Understanding the competitive ranking system</p>
-              
-              <div className="scoring-grid">
-                <div className="score-card">
-                  <div className="score-icon">🎯</div>
-                  <h3>Base Score</h3>
-                  <p className="score-points">1000 points</p>
-                  <p className="score-desc">For successfully solving the puzzle</p>
+                    {/* 1st Place */}
+                    <div className="podium-card rank-1">
+                      <div className="podium-crown">
+                        <FaCrown />
+                      </div>
+                      <div className="podium-rank champion">
+                        <span>Champion</span>
+                      </div>
+                      <div className="podium-avatar champion">{leaderboard[0].username.charAt(0).toUpperCase()}</div>
+                      <h3 className="podium-name">{leaderboard[0].username}</h3>
+                      <div className="podium-score">
+                        <FaStar className="score-icon" />
+                        {Math.round(leaderboard[0].totalScore || leaderboard[0].bestScore)}
+                      </div>
+                      <div className="podium-stats">
+                        <span>{leaderboard[0].levelsCompleted || 0} Levels</span>
+                        <span>{leaderboard[0].gamesWon || 0} Wins</span>
+                      </div>
+                    </div>
+
+                    {/* 3rd Place */}
+                    <div className="podium-card rank-3">
+                      <div className="podium-rank">
+                        <FaMedal />
+                        <span>3rd</span>
+                      </div>
+                      <div className="podium-avatar">{leaderboard[2].username.charAt(0).toUpperCase()}</div>
+                      <h3 className="podium-name">{leaderboard[2].username}</h3>
+                      <div className="podium-score">
+                        <FaStar className="score-icon" />
+                        {Math.round(leaderboard[2].totalScore || leaderboard[2].bestScore)}
+                      </div>
+                      <div className="podium-stats">
+                        <span>{leaderboard[2].levelsCompleted || 0} Levels</span>
+                        <span>{leaderboard[2].gamesWon || 0} Wins</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rankings List */}
+                <div className="rankings-list">
+                  <div className="rankings-header">
+                    <h3>
+                      <FaChartLine />
+                      All Rankings
+                    </h3>
+                  </div>
+                  
+                  <div className="rankings-grid">
+                    {leaderboard.map((player, index) => {
+                      const rankData = getRankIcon(index);
+                      return (
+                        <div 
+                          key={player._id} 
+                          className={`ranking-card ${index < 3 ? 'top-rank' : ''} ${player.isCurrentUser ? 'current-user' : ''}`}
+                        >
+                          <div className="rank-badge" style={{ color: rankData.color }}>
+                            {rankData.icon}
+                            <span className="rank-number">#{index + 1}</span>
+                          </div>
+                          
+                          <div className="player-info">
+                            <div className="player-avatar">
+                              {player.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="player-details">
+                              <h4 className="player-name">
+                                {player.username}
+                                {player.isCurrentUser && <span className="you-badge">You</span>}
+                              </h4>
+                              <p className="player-rank">{player.rank || 'Bronze'}</p>
+                            </div>
+                          </div>
+
+                          <div className="player-stats">
+                            <div className="stat-item">
+                              <FaStar className="stat-icon" />
+                              <span className="stat-value">{Math.round(player.totalScore || player.bestScore)}</span>
+                              <span className="stat-label">Score</span>
+                            </div>
+                            <div className="stat-item">
+                              <FaTrophy className="stat-icon" />
+                              <span className="stat-value">{player.levelsCompleted || 0}</span>
+                              <span className="stat-label">Levels</span>
+                            </div>
+                            <div className="stat-item">
+                              <FaMedal className="stat-icon" />
+                              <span className="stat-value">{player.gamesWon || 0}</span>
+                              <span className="stat-label">Wins</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                
-                <div className="score-card">
-                  <div className="score-icon">🏆</div>
-                  <h3>Level Completion</h3>
-                  <p className="score-points">100-500 pts</p>
-                  <p className="score-desc">Bonus points for completing level challenges</p>
-                </div>
-                
-                <div className="score-card">
-                  <div className="score-icon">⚡</div>
-                  <h3>Speed Bonus</h3>
-                  <p className="score-points">Up to +500 pts</p>
-                  <p className="score-desc">Faster solutions earn more points</p>
-                </div>
-                
-                <div className="score-card">
-                  <div className="score-icon">🎲</div>
-                  <h3>Move Efficiency</h3>
-                  <p className="score-points">-10 pts per move</p>
-                  <p className="score-desc">Fewer moves = higher score</p>
-                </div>
-                
-                <div className="score-card">
-                  <div className="score-icon">�</div>
-                  <h3>Hint Penalty</h3>
-                  <p className="score-points">-100 pts per hint</p>
-                  <p className="score-desc">Independent solving rewarded</p>
-                </div>
-                
-                <div className="score-card">
-                  <div className="score-icon">👑</div>
-                  <h3>Rank System</h3>
-                  <p className="score-points">Bronze → Crown</p>
-                  <p className="score-desc">Progress through 5 difficulty tiers</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              </>
+            )}
+          </>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 };
 

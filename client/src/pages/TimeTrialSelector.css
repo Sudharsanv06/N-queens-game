@@ -1,0 +1,290 @@
+/* Import shared styles from BoardSizeSelector */
+@import './BoardSizeSelector.css';
+
+/* Global background for time trial selector */
+.board-size-page {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 50%, #fecaca 100%);
+  min-height: 100vh;
+}
+
+/* Time Trial specific header styling */
+.size-header {
+  background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+.size-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.size-title h1 {
+  color: white !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Time Trial specific overrides and additions */
+.time-selector-title {
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.time-option {
+  background: white;
+  border: 3px solid #fecaca;
+  border-radius: 1.25rem;
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  min-height: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.time-option:hover {
+  border-color: #ef4444;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.25);
+}
+
+.time-option.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  color: white;
+  box-shadow: 0 12px 30px rgba(239, 68, 68, 0.4);
+  transform: scale(1.05);
+}
+
+.time-label {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.time-difficulty {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.time-trial-badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: 3rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.start-game-btn.time-trial-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  padding: 1.25rem 3rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+  border: none;
+  border-radius: 1rem;
+}
+
+.start-game-btn.time-trial-btn:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}
+
+.info-card.time-trial-card {
+  border-top: 4px solid #ef4444;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.info-card.time-trial-card h3 {
+  color: #ef4444;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Size selector card styling */
+.size-selector-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.15);
+  border: 3px solid #fecaca;
+}
+
+.size-selector-card h2 {
+  color: #dc2626;
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Size grid styling */
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.size-option {
+  background: white;
+  border: 3px solid #fecaca;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.size-option:hover {
+  border-color: #ef4444;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
+}
+
+.size-option.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  color: white;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  transform: scale(1.08);
+}
+
+/* Difficulty info styling */
+.difficulty-info {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid #fecaca;
+}
+
+.difficulty-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.size-description {
+  text-align: center;
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.hint-text {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+/* Info cards grid */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.info-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.info-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.info-card p {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.info-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-card ul li {
+  padding: 0.5rem 0;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-card ul li::before {
+  content: '✓';
+  color: #ef4444;
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .time-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .size-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+  
+  .time-selector-title {
+    font-size: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .size-selector-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .info-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .start-game-btn.time-trial-btn {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+}

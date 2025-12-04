@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Clock, AlertCircle } from 'lucide-react'
-import { decrementPlayerTime, decrementOpponentTime } from '../../store/slices/multiplayerSliceNew'
+import { decrementPlayerTime, decrementOpponentTime } from '../../store/slices/multiplayerSlice'
 import { useMultiplayerSocket } from '../../hooks/useMultiplayerSocket'
 
 export const TimerSync = ({ side = 'player1' }) => {

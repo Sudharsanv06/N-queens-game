@@ -1,200 +1,128 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { OfflineAuth } from '../utils/offlineAuth';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logoutUser } from '../store/slices/authSlice';
+import { FaChessQueen, FaHome, FaGamepad, FaTrophy, FaBook, FaUser, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaBars, FaTimes } from 'react-icons/fa';
 import './Navbar.css';
 
-const Navbar = () => {
-  const location = useLocation();
+function Navbar() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  // Handle scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Check user status on load and when storage changes
-  useEffect(() => {
-    const checkUser = () => {
-      // Use OfflineAuth to get current user consistently
-      const userData = OfflineAuth.getCurrentUser();
-      setUser(userData);
-    };
-
-    // Initial check
-    checkUser();
-
-    // Listen for storage events (for cross-tab sync)
-    const handleStorageChange = () => checkUser();
-    window.addEventListener('storage', handleStorageChange);
-
-    // Cleanup
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    // Use OfflineAuth logout method for consistency
-    OfflineAuth.logout();
-    setUser(null);
-    setIsMenuOpen(false); // Close mobile menu
-    // Notify other tabs
-    window.dispatchEvent(new Event('storage'));
-    navigate('/');
+    dispatch(logoutUser());
+    setMobileMenuOpen(false);
+    navigate('/login');
   };
 
   const toggleMobileMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const closeMobileMenu = () => {
-    setIsMenuOpen(false);
+    setMobileMenuOpen(false);
   };
 
-  return (
-    <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-container">
-        <div className="navbar-brand">
-          <Link to="/" className="navbar-logo" onClick={closeMobileMenu}>
-            N-Queens Game
-          </Link>
-        </div>
+  const isActive = (path) => location.pathname === path;
 
-        <button 
-          className={`navbar-toggle ${isMenuOpen ? 'active' : ''}`}
-          onClick={toggleMobileMenu}
-          aria-label="Toggle navigation menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+  return (
+    <nav className="navbar">
+      <div className="navbar-container">
+        <Link to="/" className="navbar-logo" onClick={closeMobileMenu}>
+          <FaChessQueen className="logo-icon" />
+          <span className="logo-text">N-Queens</span>
+        </Link>
         
-        <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
-          <Link 
-            to="/" 
-            className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            Home
-          </Link>
-          <Link 
-            to="/about" 
-            className={`navbar-link ${location.pathname === '/about' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            About
-          </Link>
-          <Link 
-            to="/leaderboard" 
-            className={`navbar-link ${location.pathname === '/leaderboard' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            Leaderboard
-          </Link>
-          <Link 
-            to="/achievements" 
-            className={`navbar-link ${location.pathname === '/achievements' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            Achievements
-          </Link>
-          <Link 
-            to="/tutorial" 
-            className={`navbar-link ${location.pathname === '/tutorial' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            Tutorial
-          </Link>
-          
-          {/* Social Features - Only show if logged in */}
-          {user && (
-            <>
-              <Link 
-                to="/friends" 
-                className={`navbar-link ${location.pathname === '/friends' ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                Friends
-              </Link>
-              <Link 
-                to="/replays" 
-                className={`navbar-link ${location.pathname === '/replays' ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                Replays
-              </Link>
-              <Link 
-                to="/tournaments" 
-                className={`navbar-link ${location.pathname === '/tournaments' ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                Tournaments
-              </Link>
-              <Link 
-                to="/puzzle-creator" 
-                className={`navbar-link ${location.pathname === '/puzzle-creator' ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                Create Puzzle
-              </Link>
-              <Link 
-                to="/puzzle-library" 
-                className={`navbar-link ${location.pathname === '/puzzle-library' ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                Puzzle Library
-              </Link>
-            </>
-          )}
-          
-          <Link 
-            to="/contact" 
-            className={`navbar-link ${location.pathname === '/contact' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            Contact
-          </Link>
-          {user && user.isAdmin && (
+        <button className="mobile-menu-toggle" onClick={toggleMobileMenu} aria-label="Toggle menu">
+          {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
+
+        <div className={`navbar-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <div className="menu-section">
             <Link 
-              to="/analytics" 
-              className={`navbar-link admin-link ${location.pathname === '/analytics' ? 'active' : ''}`}
+              to="/" 
+              className={`navbar-link ${isActive('/') ? 'active' : ''}`}
               onClick={closeMobileMenu}
             >
-              Analytics
+              <FaHome className="link-icon" />
+              <span>Home</span>
             </Link>
-          )}
+            <Link 
+              to="/play" 
+              className={`navbar-link ${isActive('/play') || location.pathname.startsWith('/game') ? 'active' : ''}`}
+              onClick={closeMobileMenu}
+            >
+              <FaGamepad className="link-icon" />
+              <span>Play</span>
+            </Link>
+            <Link 
+              to="/leaderboard" 
+              className={`navbar-link ${isActive('/leaderboard') ? 'active' : ''}`}
+              onClick={closeMobileMenu}
+            >
+              <FaTrophy className="link-icon" />
+              <span>Leaderboard</span>
+            </Link>
+            <Link 
+              to="/tutorial" 
+              className={`navbar-link ${isActive('/tutorial') ? 'active' : ''}`}
+              onClick={closeMobileMenu}
+            >
+              <FaBook className="link-icon" />
+              <span>Tutorial</span>
+            </Link>
+          </div>
+          
+          <div className="menu-divider"></div>
 
-          <div className="navbar-auth">
+          <div className="menu-section menu-auth">
             {user ? (
-              <div className="user-section">
-                <span className="username">Welcome, {user.name}</span>
-                <button onClick={handleLogout} className="logout-btn">
-                  Logout
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className={`navbar-link ${isActive('/dashboard') ? 'active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  <FaUser className="link-icon" />
+                  <span>{user.username || user.name}</span>
+                </Link>
+                <button onClick={handleLogout} className="navbar-link logout-btn">
+                  <FaSignOutAlt className="link-icon" />
+                  <span>Logout</span>
                 </button>
-              </div>
+              </>
             ) : (
               <>
-                <Link to="/login" className="navbar-btn login-btn" onClick={closeMobileMenu}>
-                  Login
+                <Link 
+                  to="/login" 
+                  className={`navbar-link ${isActive('/login') ? 'active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  <FaSignInAlt className="link-icon" />
+                  <span>Login</span>
                 </Link>
-                <Link to="/signup" className="navbar-btn signup-btn" onClick={closeMobileMenu}>
-                  Sign Up
+                <Link 
+                  to="/signup" 
+                  className={`navbar-link signup-highlight ${isActive('/signup') ? 'active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  <FaUserPlus className="link-icon" />
+                  <span>Sign Up</span>
                 </Link>
               </>
             )}
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="mobile-overlay" onClick={closeMobileMenu}></div>
+        )}
       </div>
     </nav>
   );
-};
+}
 
 export default Navbar;

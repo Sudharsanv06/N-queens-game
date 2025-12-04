@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import Layout from './Layout';
 import './Contact.css';
 
 const Contact = () => {
@@ -53,8 +52,7 @@ const Contact = () => {
   };
 
   return (
-    <Layout>
-      <div className="contact-page">
+    <div className="contact-page">
         <div className="contact-container">
           <h1>Contact Us</h1>
           
@@ -148,7 +146,6 @@ const Contact = () => {
           </div>
         </div>
       </div>
-    </Layout>
   );
 };
 

@@ -4,13 +4,11 @@ const userMilestoneSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   milestoneId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   achievedAt: {
     type: Date,

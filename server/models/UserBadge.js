@@ -4,13 +4,11 @@ const userBadgeSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   badgeId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   earnedAt: {
     type: Date,
