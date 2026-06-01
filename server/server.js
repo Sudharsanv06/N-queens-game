@@ -11,73 +11,64 @@ import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
 dotenv.config();
 
-// Import routes
-import authRoutes from './routes/auth.js';
-import userRoutes from './routes/user.js';
-import gamesRoutes from './routes/gameSaves.js';
-import achievementsRoutes from './routes/achievements.js';
-import leaderboardRoutes from './routes/leaderboard.js';
-import statsRoutes from './routes/stats.js';
-import analyticsRoutes from './routes/analytics.js';
-import socialRoutes from './routes/social.js';
-import tournamentsRoutes from './routes/tournaments.js';
-import puzzlesRoutes from './routes/puzzles.js';
-import predefinedPuzzlesRoutes from './routes/predefinedPuzzles.js';
-import dailyChallengesRoutes from './routes/dailyChallenges.js';
+// ─── Route Imports ───────────────────────────────────────────────────────────
+import authRoutes          from './routes/auth.js';
+import userRoutes          from './routes/user.js';
+import gamesRoutes         from './routes/gameSaves.js';
+import achievementsRoutes  from './routes/achievements.js';
+import leaderboardRoutes   from './routes/leaderboard.js';
+import statsRoutes         from './routes/stats.js';
+import analyticsRoutes     from './routes/analytics.js';
+import socialRoutes        from './routes/social.js';
+import tournamentsRoutes   from './routes/tournaments.js';
+import puzzlesRoutes       from './routes/puzzles.js';
+import predefinedPuzzlesRoutes from './routes/predefinedPuzzles.js'; // FIX: was colliding with puzzlesRoutes
+import dailyChallengesRoutes   from './routes/dailyChallenges.js';
 import notificationsRoutes from './routes/notifications.js';
-import badgeRoutes from './routes/badgeRoutes.js';
-import rewardRoutes from './routes/rewardRoutes.js';
-import contactRoutes from './routes/contact.js';
-import multiplayerRoutes from './routes/multiplayer.js';
-import matchmakingRoutes from './routes/matchmaking.js';
+import badgeRoutes         from './routes/badgeRoutes.js';
+import rewardRoutes        from './routes/rewardRoutes.js';
+import contactRoutes       from './routes/contact.js';
+import emailRoutes         from './routes/emails.js';             // FIX: was never imported
+import multiplayerRoutes   from './routes/multiplayer.js';
+import matchmakingRoutes   from './routes/matchmaking.js';
 
-// Import WebSocket handler
+// ─── Other Imports ────────────────────────────────────────────────────────────
 import MultiplayerSocketHandler from './websocket/multiplayerSocket.js';
-
-// Import cron jobs
-import { initializeCronJobs } from './cron/dailyChallengeCron.js';
-
-// Import middleware
+import { initializeCronJobs }   from './cron/dailyChallengeCron.js';
 import { globalErrorHandler, notFoundHandler } from './utils/errorHandler.js';
 
-// Initialize Express app
+// ─── App Setup ────────────────────────────────────────────────────────────────
 const app = express();
 
-// Environment variables
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+const PORT         = process.env.PORT         || 5000;
+const MONGO_URI    = process.env.MONGO_URI;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV     = process.env.NODE_ENV      || 'development';
 
-// Security middleware
+// ─── Security ────────────────────────────────────────────────────────────────
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", 'data:', 'https:'],
     },
   },
 }));
 
-// CORS configuration
+// ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = CLIENT_ORIGIN.split(',').map(o => o.trim());
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow Postman / mobile apps
+    const allowed = CLIENT_ORIGIN.split(',').map(o => o.trim());
+    if (allowed.includes(origin) || allowed.includes('*')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -85,132 +76,103 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
 
-// Body parsing middleware
+// ─── Body / Static / Compression / Logging ───────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Serve static files for uploaded avatars
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Compression middleware
 app.use(compression());
+app.use(morgan(NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-// Logging middleware
-if (NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
-
-// Global rate limiter
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: process.env.RATE_LIMIT_MAX || 100,
-  message: { 
-    success: false, 
-    message: 'Too many requests from this IP, please try again later.' 
-  },
+  message: { success: false, message: 'Too many requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
-
 app.use('/api/', limiter);
 
-// Health check endpoint
+// ─── Health / Version / Root ──────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
-  const healthCheck = {
+  const check = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: NODE_ENV
+    environment: NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   };
-
-  try {
-    // Check database connection
-    if (mongoose.connection.readyState === 1) {
-      healthCheck.database = 'connected';
-    } else {
-      healthCheck.database = 'disconnected';
-      healthCheck.status = 'degraded';
-    }
-    
-    res.status(healthCheck.status === 'ok' ? 200 : 503).json(healthCheck);
-  } catch (error) {
-    healthCheck.status = 'error';
-    healthCheck.database = 'error';
-    res.status(503).json(healthCheck);
-  }
+  if (check.database !== 'connected') check.status = 'degraded';
+  res.status(check.status === 'ok' ? 200 : 503).json(check);
 });
 
-// Version endpoint
 app.get('/api/version', (req, res) => {
-  res.json({
-    version: '1.0.0',
-    name: 'N-Queens Game API',
-    timestamp: new Date().toISOString(),
-    environment: NODE_ENV
-  });
+  res.json({ version: '1.0.0', name: 'N-Queens Game API', environment: NODE_ENV });
 });
 
-// Root endpoint
 app.get('/', (req, res) => {
   res.json({
     message: 'N-Queens Game API',
     version: '1.0.0',
     status: 'running',
     endpoints: {
-      health: '/health',
-      version: '/api/version',
-      auth: '/api/auth',
-      users: '/api/users',
-      games: '/api/games',
-      achievements: '/api/achievements',
-      leaderboard: '/api/leaderboard',
-      stats: '/api/stats',
-      puzzles: '/api/puzzles',
+      health:          '/health',
+      auth:            '/api/auth',
+      users:           '/api/users',
+      games:           '/api/games',
+      achievements:    '/api/achievements',
+      leaderboard:     '/api/leaderboard',
+      stats:           '/api/stats',
+      analytics:       '/api/analytics',
+      social:          '/api/social',
+      tournaments:     '/api/tournaments',
+      puzzles:         '/api/puzzles',
+      predefinedPuzzles: '/api/predefined-puzzles',
       dailyChallenges: '/api/daily-challenges',
-      notifications: '/api/notifications',
-      multiplayer: '/api/multiplayer',
-      matchmaking: '/api/matchmaking'
-    }
+      notifications:   '/api/notifications',
+      badges:          '/api/badges',
+      rewards:         '/api/rewards',
+      emails:          '/api/emails',
+      contact:         '/api/contact',
+      multiplayer:     '/api/multiplayer',
+      matchmaking:     '/api/matchmaking',
+    },
   });
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/games', gamesRoutes);
-app.use('/api/achievements', achievementsRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/social', socialRoutes);
-app.use('/api/tournaments', tournamentsRoutes);
-app.use('/api/puzzles', puzzlesRoutes);
-app.use('/api/puzzles', predefinedPuzzlesRoutes);
-app.use('/api/daily-challenges', dailyChallengesRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/badges', badgeRoutes);
-app.use('/api/rewards', rewardRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/multiplayer', multiplayerRoutes);
-app.use('/api/matchmaking', matchmakingRoutes);
+// ─── API Routes ───────────────────────────────────────────────────────────────
+app.use('/api/auth',               authRoutes);
+app.use('/api/users',              userRoutes);
+app.use('/api/games',              gamesRoutes);
+app.use('/api/achievements',       achievementsRoutes);
+app.use('/api/leaderboard',        leaderboardRoutes);
+app.use('/api/stats',              statsRoutes);
+app.use('/api/analytics',          analyticsRoutes);
+app.use('/api/social',             socialRoutes);
+app.use('/api/tournaments',        tournamentsRoutes);
+app.use('/api/puzzles',            puzzlesRoutes);
+app.use('/api/predefined-puzzles', predefinedPuzzlesRoutes); // FIX: was /api/puzzles (collision)
+app.use('/api/daily-challenges',   dailyChallengesRoutes);
+app.use('/api/notifications',      notificationsRoutes);
+app.use('/api/badges',             badgeRoutes);
+app.use('/api/rewards',            rewardRoutes);
+app.use('/api/emails',             emailRoutes);             // FIX: was never mounted
+app.use('/api/contact',            contactRoutes);
+app.use('/api/multiplayer',        multiplayerRoutes);
+app.use('/api/matchmaking',        matchmakingRoutes);
 
-// 404 handler
+// ─── Error Handlers ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
-
-// Global error handler
 app.use(globalErrorHandler);
 
-// Database connection with retry logic
+// ─── Database Connection ─────────────────────────────────────────────────────
 if (!MONGO_URI) {
   console.error('❌ FATAL: MONGO_URI environment variable is not set!');
-  console.error('   Please add MONGO_URI to your Render environment variables.');
   process.exit(1);
 }
 
@@ -223,74 +185,58 @@ const connectWithRetry = async (retries = 5, delay = 5000) => {
       });
       console.log('✅ MongoDB connected successfully');
       console.log(`   Database: ${mongoose.connection.name}`);
-      // Initialize cron jobs after database connection
       initializeCronJobs();
       return;
     } catch (error) {
-      console.error(`❌ MongoDB connection attempt ${i + 1}/${retries} failed:`, error.message);
-      
+      console.error(`❌ MongoDB attempt ${i + 1}/${retries} failed: ${error.message}`);
       if (i === retries - 1) {
-        console.error('   Connection string format:', MONGO_URI ? MONGO_URI.slice(0, 30) + '...' : 'MISSING');
-        console.error('   Troubleshooting:');
-        console.error('   1. Verify MONGO_URI is set in Render Environment variables');
-        console.error('   2. Check MongoDB Atlas Network Access allows 0.0.0.0/0');
-        console.error('   3. Wait 2-3 minutes after adding IP whitelist in Atlas');
-        console.error('   4. Verify connection string has no quotes around it');
-        console.error('   5. Ensure database name in connection string is correct');
+        console.error('Troubleshooting checklist:');
+        console.error('  1. MONGO_URI is set in environment variables');
+        console.error('  2. MongoDB Atlas → Network Access → 0.0.0.0/0 is whitelisted');
+        console.error('  3. No quotes around the connection string value');
         process.exit(1);
       }
-      
-      const waitTime = delay * Math.pow(2, i); // Exponential backoff
-      console.log(`   Retrying in ${waitTime / 1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      const wait = delay * Math.pow(2, i);
+      console.log(`   Retrying in ${wait / 1000}s...`);
+      await new Promise(r => setTimeout(r, wait));
     }
   }
 };
 
 connectWithRetry();
 
-// Create HTTP server and Socket.IO instance
+// ─── HTTP Server + Socket.IO ──────────────────────────────────────────────────
 const server = createServer(app);
 
 const io = new Server(server, {
   cors: corsOptions,
   pingTimeout: 60000,
   pingInterval: 25000,
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
 });
 
-// Initialize multiplayer WebSocket handler
 const multiplayerHandler = new MultiplayerSocketHandler(io);
 multiplayerHandler.initialize();
 
-// Start server
+// ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${NODE_ENV}`);
   console.log(`🔗 CORS enabled for: ${CLIENT_ORIGIN}`);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
+const shutdown = (signal) => {
+  console.log(`${signal} received: closing server`);
   server.close(() => {
-    console.log('HTTP server closed');
     mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
+      console.log('Server and DB connection closed');
       process.exit(0);
     });
   });
-});
+};
 
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
-    });
-  });
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 export default app;

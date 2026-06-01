@@ -3,6 +3,7 @@ import UserDailyChallenge from '../models/UserDailyChallenge.js'
 import UserStreak from '../models/UserStreak.js'
 import User from '../models/User.js'
 import Notification from '../models/Notification.js'
+import AchievementService from '../services/achievementService.js' // FIX: wired in
 
 // Get current daily challenge
 export const getCurrentChallenge = async (req, res) => {
@@ -309,7 +310,7 @@ export const completeChallenge = async (req, res) => {
     
     await challenge.save()
     
-    // Create notification
+    // Create completion notification
     await Notification.createNotification({
       userId: req.user._id,
       type: 'daily-challenge-completed',
@@ -338,13 +339,26 @@ export const completeChallenge = async (req, res) => {
         actionUrl: '/profile'
       })
     }
-    
-    // Check for achievements (optional integration)
-    // TODO: Integrate with achievement system when available
-    // await checkAchievementProgress(req.user._id, {
-    //   type: 'daily-challenge-complete',
-    //   data: { challengeType, difficulty, streak, noHints, performanceScore }
-    // })
+
+    // ─── FIX: Achievement service wired in (was TODO) ────────────────────────
+    try {
+      await AchievementService.checkAndUnlock(req.user._id, {
+        type: 'daily_challenge_complete',
+        challengeType: challenge.type,
+        difficulty:    challenge.difficulty,
+        timeTaken,
+        movesUsed,
+        hintsUsed,
+        noHints:          hintsUsed === 0,
+        performanceScore: userChallenge.performanceScore,
+        streak:           streak.currentStreak,
+        boardSize:        challenge.boardSize,
+      })
+    } catch (achievementError) {
+      // Non-fatal: log but don't fail the whole response
+      console.error('Achievement check error (non-fatal):', achievementError.message)
+    }
+    // ─────────────────────────────────────────────────────────────────────────
     
     res.json({
       success: true,
@@ -473,7 +487,7 @@ export const generateTestChallenge = async (req, res) => {
         title: 'Classic Challenge',
         description: 'Solve an 8×8 board within the time limit',
         boardSize: 8,
-        timeLimit: 300, // 5 minutes
+        timeLimit: 300,
         rewardXP: 100,
         hintsAllowed: true
       },

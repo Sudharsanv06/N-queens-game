@@ -10,7 +10,7 @@ const getAuthHeaders = () => {
 export const saveGame = async (saveData) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/api/game/save`,
+      `${API_BASE_URL}/api/games/save`,
       saveData,
       { headers: getAuthHeaders() }
     );
@@ -23,7 +23,7 @@ export const saveGame = async (saveData) => {
 export const loadGame = async (saveId) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/api/game/load/${saveId}`,
+      `${API_BASE_URL}/api/games/load/${saveId}`,
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -36,7 +36,7 @@ export const loadLatestGame = async (sessionId = null) => {
   try {
     const params = sessionId ? { sessionId } : {};
     const response = await axios.get(
-      `${API_BASE_URL}/api/game/latest`,
+      `${API_BASE_URL}/api/games/latest`,
       { 
         headers: getAuthHeaders(),
         params
@@ -51,7 +51,7 @@ export const loadLatestGame = async (sessionId = null) => {
 export const listGames = async (page = 1, limit = 10) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/api/game/list`,
+      `${API_BASE_URL}/api/games/list`,
       { 
         headers: getAuthHeaders(),
         params: { page, limit }
@@ -66,7 +66,7 @@ export const listGames = async (page = 1, limit = 10) => {
 export const deleteGame = async (saveId) => {
   try {
     const response = await axios.delete(
-      `${API_BASE_URL}/api/game/${saveId}`,
+      `${API_BASE_URL}/api/games/${saveId}`,
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -78,7 +78,7 @@ export const deleteGame = async (saveId) => {
 export const requestHint = async (sessionId, boardState, n) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/api/game/hint`,
+      `${API_BASE_URL}/api/games/hint`,
       { sessionId, boardState, n },
       { headers: getAuthHeaders() }
     );
@@ -91,7 +91,7 @@ export const requestHint = async (sessionId, boardState, n) => {
 export const mergeSave = async (mergedData) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/api/game/merge`,
+      `${API_BASE_URL}/api/games/merge`,
       mergedData,
       { headers: getAuthHeaders() }
     );
@@ -104,7 +104,7 @@ export const mergeSave = async (mergedData) => {
 export const completeSession = async (sessionId, analytics = {}) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/api/game/session/complete`,
+      `${API_BASE_URL}/api/games/session/complete`,
       { sessionId, analytics },
       { headers: getAuthHeaders() }
     );
