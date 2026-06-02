@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { mergeSaveAsync, clearConflictData } from '../store/slices/saveSlice';
-import { useResumeOnLogin } from '../hooks/useResumeOnLogin';
+import { mergeSaveAsync, clearConflictData } from '../../store/slices/saveSlice';
+import { useResumeOnLogin } from '../../hooks/useResumeOnLogin';
 
 const ConflictModal = ({ onResolve }) => {
   const dispatch = useDispatch();
@@ -53,7 +53,7 @@ const ConflictModal = ({ onResolve }) => {
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             Save Conflict Detected
           </h2>
-          
+
           <p className="text-gray-600 mb-6">
             Your local save and server save differ. Choose which version to use:
           </p>
@@ -99,14 +99,14 @@ const ConflictModal = ({ onResolve }) => {
             >
               Use Local
             </button>
-            
+
             <button
               onClick={handleUseServer}
               className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
             >
               Use Server
             </button>
-            
+
             <button
               onClick={handleMerge}
               className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
@@ -117,7 +117,7 @@ const ConflictModal = ({ onResolve }) => {
 
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              <strong>Smart Merge:</strong> Combines both saves by taking the latest timestamp for each move. 
+              <strong>Smart Merge:</strong> Combines both saves by taking the latest timestamp for each move.
               Recommended if you made changes on different devices.
             </p>
           </div>

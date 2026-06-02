@@ -5,7 +5,6 @@ const PuzzleStatsBar = ({ movesUsed, hintsUsed, maxHints, queensPlaced, totalQue
   return (
     <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
       <div className="grid grid-cols-3 gap-4">
-        {/* Moves Counter */}
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
             <Move className="w-6 h-6 text-purple-600" />
@@ -14,7 +13,6 @@ const PuzzleStatsBar = ({ movesUsed, hintsUsed, maxHints, queensPlaced, totalQue
           <span className="text-xs text-gray-500 font-medium">Moves</span>
         </div>
 
-        {/* Hints Counter */}
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
             <Lightbulb className="w-6 h-6 text-yellow-600" />
@@ -26,7 +24,6 @@ const PuzzleStatsBar = ({ movesUsed, hintsUsed, maxHints, queensPlaced, totalQue
           <span className="text-xs text-gray-500 font-medium">Hints Used</span>
         </div>
 
-        {/* Queens Placed */}
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
             <Target className="w-6 h-6 text-blue-600" />
@@ -39,7 +36,6 @@ const PuzzleStatsBar = ({ movesUsed, hintsUsed, maxHints, queensPlaced, totalQue
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="mt-4">
         <div className="flex justify-between items-center mb-1">
           <span className="text-xs font-semibold text-gray-600">Progress</span>

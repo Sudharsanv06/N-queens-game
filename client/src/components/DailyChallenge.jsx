@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import Layout from './Layout'
+import Layout from './layout/Layout'
 
 const DailyChallenge = () => {
   const navigate = useNavigate()

@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  setAutoSaveEnabled, 
-  saveGameAsync,
+import {
+  setAutoSaveEnabled,
   listGamesAsync,
   deleteGameAsync,
   clearError
-} from '../store/slices/saveSlice';
-import { useAutoSave } from '../hooks/useAutoSave';
+} from '../../store/slices/saveSlice';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 const SaveManager = ({ gameState, sessionId, onLoadGame }) => {
   const dispatch = useDispatch();
-  const { 
-    autoSaveEnabled, 
-    saveStatus, 
-    failedSaves, 
+  const {
+    autoSaveEnabled,
+    saveStatus,
+    failedSaves,
     lastSaveTime,
     savesList,
     pagination,
-    error 
+    error
   } = useSelector(state => state.save);
-  
+
   const [showSavesList, setShowSavesList] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -30,7 +29,7 @@ const SaveManager = ({ gameState, sessionId, onLoadGame }) => {
     onSaveSuccess: () => {
       showSuccessToast('Game saved successfully!');
     },
-    onSaveError: (error) => {
+    onSaveError: () => {
       showErrorToast('Auto-save failed. Will retry...');
     }
   });
@@ -138,7 +137,7 @@ const SaveManager = ({ gameState, sessionId, onLoadGame }) => {
         {error && (
           <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700 flex justify-between items-center">
             <span>{error}</span>
-            <button 
+            <button
               onClick={() => dispatch(clearError())}
               className="text-red-500 hover:text-red-700"
             >
@@ -166,8 +165,8 @@ const SaveManager = ({ gameState, sessionId, onLoadGame }) => {
           <button
             onClick={handleToggleAutoSave}
             className={`${
-              autoSaveEnabled 
-                ? 'bg-purple-500 hover:bg-purple-600' 
+              autoSaveEnabled
+                ? 'bg-purple-500 hover:bg-purple-600'
                 : 'bg-gray-400 hover:bg-gray-500'
             } text-white font-medium py-2 px-3 rounded-lg transition-colors text-sm`}
           >
@@ -175,9 +174,7 @@ const SaveManager = ({ gameState, sessionId, onLoadGame }) => {
           </button>
 
           <div className="flex items-center justify-center bg-gray-100 rounded-lg px-2">
-            <span className="text-xs text-gray-600">
-              Every 10s
-            </span>
+            <span className="text-xs text-gray-600">Every 10s</span>
           </div>
         </div>
       </div>

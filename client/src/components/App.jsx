@@ -5,11 +5,10 @@ import { Toaster } from 'react-hot-toast'
 import { Capacitor } from '@capacitor/core'
 import { store } from '../store/store'
 import { SimpleMobileUtils as MobileUtils } from '../utils/simpleMobile'
-import { OfflineGameStore } from '../utils/offlineStore'
 import ErrorBoundary from './ErrorBoundary'
 
 // ─── Layout & Shell ────────────────────────────────────────────────────────────
-import Layout from './Layout'
+import Layout from './layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
 import NotificationManager from './NotificationManager'
 import AnalyticsRoute from './AnalyticsRoute'
@@ -92,7 +91,6 @@ const App = () => {
 
         if (isMobilePlatform) {
           setIsOfflineMode(true)
-          window.offlineStore = OfflineGameStore
           setTimeout(() => {
             MobileUtils.initializeMobileApp().catch(console.error)
             MobileUtils.scheduleDailyChallengeNotification().catch(console.error)

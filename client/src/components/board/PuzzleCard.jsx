@@ -40,7 +40,6 @@ const PuzzleCard = ({ puzzle }) => {
       transition={{ duration: 0.2 }}
       className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200"
     >
-      {/* Header with difficulty badge */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4">
         <div className="flex justify-between items-start">
           <div>
@@ -51,7 +50,7 @@ const PuzzleCard = ({ puzzle }) => {
               Puzzle #{puzzle.puzzleId.split('-')[1]}
             </p>
           </div>
-          
+
           {puzzle.completed && (
             <motion.div
               initial={{ scale: 0 }}
@@ -64,13 +63,11 @@ const PuzzleCard = ({ puzzle }) => {
         </div>
       </div>
 
-      {/* Puzzle info */}
       <div className="p-4">
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
           {puzzle.description}
         </p>
 
-        {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
             <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -99,7 +96,6 @@ const PuzzleCard = ({ puzzle }) => {
           </div>
         </div>
 
-        {/* Difficulty & Expected Time */}
         <div className="flex items-center justify-between mb-4">
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(
@@ -116,7 +112,6 @@ const PuzzleCard = ({ puzzle }) => {
           </div>
         </div>
 
-        {/* User progress (if completed) */}
         {puzzle.completed && puzzle.userProgress && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -151,7 +146,6 @@ const PuzzleCard = ({ puzzle }) => {
           </motion.div>
         )}
 
-        {/* Play button */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

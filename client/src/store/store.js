@@ -1,50 +1,66 @@
-import { configureStore } from '@reduxjs/toolkit'
-import authSlice from './slices/authSlice'
-import userSlice from './slices/userSlice'
-import statsSlice from './slices/statsSlice'
-import leaderboardSlice from './slices/leaderboardSlice'
-import gameSlice from './slices/gameSlice'
-import multiplayerSlice from './slices/multiplayerSlice'
-import matchmakingSlice from './slices/matchmakingSlice'
-import eloSlice from './slices/eloSlice'
-import uiSlice from './slices/uiSlice'
-import saveSlice from './slices/saveSlice'
-import puzzleSlice from './slices/puzzleSlice'
-import achievementSlice from './slices/achievementSlice'
-import badgeSlice from './slices/badgeSlice'
-import xpSlice from './slices/xpSlice'
-import rewardSlice from './slices/rewardSlice'
-import dailyChallengeSlice from './slices/dailyChallengeSlice'
-import streakSlice from './slices/streakSlice'
-import notificationsSlice from './slices/notificationsSlice'
-import settingsSlice from './slices/settingsSlice'
+/**
+ * store.js
+ * Consolidated Redux store — 6 slices replacing the original 19.
+ *
+ * Slice → store key → what it absorbed
+ * ─────────────────────────────────────────────────────────────────────────────
+ *  authSlice        → state.auth          ← authSlice, userSlice, statsSlice, settingsSlice
+ *  gameSlice        → state.game          ← gameSlice, saveSlice, puzzleSlice, dailyChallengeSlice, streakSlice
+ *  multiplayerSlice → state.multiplayer   ← multiplayerSlice, matchmakingSlice, eloSlice
+ *  achievementSlice → state.achievements  ← achievementSlice, badgeSlice, xpSlice, rewardSlice
+ *  notificationSlice→ state.notifications ← notificationsSlice (standalone, cleaned up)
+ *  uiSlice          → state.ui            ← uiSlice, leaderboardSlice
+ *
+ * State path migration cheat-sheet (update component selectors):
+ *   state.user.*           → state.auth.*
+ *   state.stats.*          → state.auth.*
+ *   state.settings.*       → state.auth.settings.*
+ *   state.save.*           → state.game.save.*
+ *   state.puzzle.*         → state.game.puzzle.*
+ *   state.dailyChallenge.* → state.game.challenge.*
+ *   state.streak.*         → state.game.streak.*
+ *   state.matchmaking.*    → state.multiplayer.matchmaking.*
+ *   state.elo.*            → state.multiplayer.elo.*
+ *   state.badges.*         → state.achievements.badges.*
+ *   state.xp.*             → state.achievements.xp.*
+ *   state.rewards.*        → state.achievements.rewards.*
+ *   state.leaderboard.*    → state.ui.leaderboard.*
+ */
 
-export const store = configureStore({
+import { configureStore } from '@reduxjs/toolkit'
+
+import authReducer       from './slices/authSlice'
+import gameReducer       from './slices/gameSlice'
+import multiplayerReducer from './slices/multiplayerSlice'
+import achievementReducer from './slices/achievementSlice'
+import notificationReducer from './slices/notificationSlice'
+import uiReducer         from './slices/uiSlice'
+
+const store = configureStore({
   reducer: {
-    auth: authSlice,
-    user: userSlice,
-    stats: statsSlice,
-    leaderboard: leaderboardSlice,
-    game: gameSlice,
-    multiplayer: multiplayerSlice,
-    matchmaking: matchmakingSlice,
-    elo: eloSlice,
-    ui: uiSlice,
-    save: saveSlice,
-    puzzle: puzzleSlice,
-    achievements: achievementSlice,
-    badges: badgeSlice,
-    xp: xpSlice,
-    rewards: rewardSlice,
-    dailyChallenge: dailyChallengeSlice,
-    streak: streakSlice,
-    notifications: notificationsSlice,
-    settings: settingsSlice,
+    auth:          authReducer,
+    game:          gameReducer,
+    multiplayer:   multiplayerReducer,
+    achievements:  achievementReducer,
+    notifications: notificationReducer,
+    ui:            uiReducer,
   },
+
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      // Some slices store non-serializable Date objects (earnedAt, lastLevelUp)
+      // in state for display purposes — suppress the warning for those paths.
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
+        ignoredPaths: [
+          'auth.user.createdAt',
+          'achievements.xp.xp.lastLevelUp',
+          'game.streak.streak.lastActivity',
+          'game.challenge.currentChallenge.date',
+        ],
       },
     }),
+
+  devTools: import.meta.env.DEV,
 })
+
+export default store

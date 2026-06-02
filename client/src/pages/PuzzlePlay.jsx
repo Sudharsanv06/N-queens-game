@@ -4,8 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, RotateCcw, Lightbulb, Flag, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import PuzzleTimer from '../components/PuzzleTimer';
-import PuzzleStatsBar from '../components/PuzzleStatsBar';
+import PuzzleTimer from '../components/game/PuzzleTimer';
+import PuzzleStatsBar from '../components/game/PuzzleStatsBar';
 import {
   fetchPuzzle,
   startPuzzleAttempt,

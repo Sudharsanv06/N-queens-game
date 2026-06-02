@@ -7,10 +7,30 @@ import {
   FaCrown, FaMedal, FaFire, FaGamepad, FaLock, FaCamera
 } from 'react-icons/fa';
 import { logoutUser, updateProfile, changePassword } from '../store/slices/authSlice';
-import { OfflineGameStore } from '../utils/offlineStore';
-import { OfflineAuth } from '../utils/offlineAuth';
 import toast from 'react-hot-toast';
 import './Dashboard.css';
+
+const OFFLINE_GAMES_KEY = 'nqueens_offline_games';
+
+const getCurrentUser = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    console.error('Failed to parse current user:', error);
+    return null;
+  }
+};
+
+const getStoredGames = () => {
+  try {
+    const gamesJson = localStorage.getItem(OFFLINE_GAMES_KEY);
+    return gamesJson ? Object.values(JSON.parse(gamesJson)) : [];
+  } catch (error) {
+    console.error('Failed to load stored games:', error);
+    return [];
+  }
+};
 
 function Dashboard() {
   const dispatch = useDispatch();
@@ -215,11 +235,11 @@ function Dashboard() {
     const fetchGameData = async () => {
       try {
         // Get current user
-        const currentUser = OfflineAuth.getCurrentUser();
+        const currentUser = getCurrentUser();
         const currentUsername = user?.name || user?.username;
         
         // Get all games from offline storage
-        const allGames = OfflineGameStore.getGames();
+        const allGames = getStoredGames();
         console.log('All games:', allGames);
         
         // Filter games for current user

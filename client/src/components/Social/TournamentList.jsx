@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { Trophy, Calendar, Users, Clock, Star, Plus, Filter } from 'lucide-react'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
-import Layout from './Layout'
+import Layout from './layout/Layout'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 

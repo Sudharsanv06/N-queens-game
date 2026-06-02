@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Puzzle, Trophy, Filter, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import PuzzleCard from '../components/PuzzleCard';
+import PuzzleCard from '../components/board/PuzzleCard';
 import {
   fetchPuzzleList,
   fetchUserPuzzleProgress,

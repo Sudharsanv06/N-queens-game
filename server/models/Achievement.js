@@ -17,7 +17,7 @@ const achievementSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['progress', 'performance', 'puzzle'],
+    enum: ['progress', 'performance', 'puzzle', 'daily_challenge', 'multiplayer', 'social'],
     required: true,
     index: true
   },
@@ -28,6 +28,7 @@ const achievementSchema = new mongoose.Schema({
   requirementType: {
     type: String,
     enum: [
+      // Original types
       'games_completed',
       'puzzles_completed',
       'queens_placed',
@@ -38,7 +39,20 @@ const achievementSchema = new mongoose.Schema({
       'streak_days',
       'level_reached',
       'perfect_solve',
-      'efficiency'
+      'efficiency',
+      // Daily challenge types (used by dailyChallengeController)
+      'daily_challenge_complete',
+      'daily_challenge_streak',
+      'daily_challenge_perfect',   // completed with no hints
+      'daily_challenge_fast',      // completed under time threshold
+      // Multiplayer types
+      'multiplayer_win',
+      'multiplayer_games_played',
+      'multiplayer_win_streak',
+      // Puzzle creation types
+      'puzzle_created',
+      'puzzle_solved',
+      'puzzle_rated'
     ],
     required: true
   },
@@ -87,6 +101,7 @@ const achievementSchema = new mongoose.Schema({
 // Index for efficient querying
 achievementSchema.index({ category: 1, sortOrder: 1 })
 achievementSchema.index({ isActive: 1, category: 1 })
+achievementSchema.index({ requirementType: 1, isActive: 1 })
 
 const Achievement = mongoose.model('Achievement', achievementSchema)
 

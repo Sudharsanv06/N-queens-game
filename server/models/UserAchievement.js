@@ -12,11 +12,20 @@ const userAchievementSchema = new mongoose.Schema({
   },
   unlockedAt: {
     type: Date,
-    default: Date.now
+    default: null   // null until actually completed
   },
-  progress: {
+  // Tracks numeric progress toward the requirementValue
+  // e.g. 3 out of 5 multiplayer wins → currentValue: 3
+  currentValue: {
     type: Number,
     default: 0
+  },
+  // Legacy field kept for backward compatibility — mirrors currentValue / requirementValue ratio
+  progress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   },
   isCompleted: {
     type: Boolean,
@@ -26,6 +35,12 @@ const userAchievementSchema = new mongoose.Schema({
   notificationShown: {
     type: Boolean,
     default: false
+  },
+  // Stores context about what triggered the unlock or last progress update
+  // e.g. { gameId, boardSize, solveTimeSeconds, challengeDate, roomId }
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 }, {
   timestamps: true
@@ -35,6 +50,8 @@ const userAchievementSchema = new mongoose.Schema({
 userAchievementSchema.index({ userId: 1, achievementId: 1 }, { unique: true })
 userAchievementSchema.index({ userId: 1, isCompleted: 1 })
 userAchievementSchema.index({ userId: 1, unlockedAt: -1 })
+// For finding users who haven't been notified yet (notification queue)
+userAchievementSchema.index({ userId: 1, isCompleted: 1, notificationShown: 1 })
 
 const UserAchievement = mongoose.model('UserAchievement', userAchievementSchema)
 

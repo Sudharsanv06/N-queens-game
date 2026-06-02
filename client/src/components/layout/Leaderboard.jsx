@@ -3,10 +3,30 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { fetchLeaderboard } from '../store/slices/gameSlice';
-import { OfflineGameStore } from '../utils/offlineStore';
-import { OfflineAuth } from '../utils/offlineAuth';
 import { FaTrophy, FaMedal, FaCrown, FaStar, FaChartLine, FaFire, FaAward } from 'react-icons/fa';
 import './Leaderboard.css';
+
+const OFFLINE_GAMES_KEY = 'nqueens_offline_games';
+
+const getCurrentUser = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    console.error('Failed to parse current user:', error);
+    return null;
+  }
+};
+
+const getStoredGames = () => {
+  try {
+    const gamesJson = localStorage.getItem(OFFLINE_GAMES_KEY);
+    return gamesJson ? Object.values(JSON.parse(gamesJson)) : [];
+  } catch (error) {
+    console.error('Failed to load stored games:', error);
+    return [];
+  }
+};
 
 const Leaderboard = () => {
   const dispatch = useDispatch();
@@ -27,108 +47,81 @@ const Leaderboard = () => {
     { value: 'expert', label: 'Expert Level', icon: FaFire }
   ];
 
-  // Get offline leaderboard data with level completion tracking
+  // Get offline leaderboard data from localStorage-backed saves
   const getOfflineLeaderboard = () => {
     try {
-      const allUsers = OfflineAuth.getOfflineUsers();
-      const currentUser = OfflineAuth.getCurrentUser();
-      const games = OfflineGameStore.getGames();
-      
-      console.log('🔍 Leaderboard Debug:');
-      console.log('All users:', allUsers.length);
-      console.log('Current user:', currentUser?.name);
-      console.log('Total games stored:', games.length);
-      console.log('Solved games:', games.filter(g => g.solved).length);
-      
-      // Log games by user
-      allUsers.forEach(user => {
-        const userGames = games.filter(game => game.userId === user.id && game.solved);
-        console.log(`User ${user.name}: ${userGames.length} solved games`);
-      });
-      
-      // Create leaderboard from offline users
-      const offlineLeaderboard = allUsers.map(user => {
-        const userGames = games.filter(game => game.userId === user.id && game.solved);
-        const stats = user.stats || {
-          gamesPlayed: 0,
-          gamesWon: 0,
-          totalTime: 0,
-          bestTimes: {},
-          streak: 0
-        };
+      const currentUser = getCurrentUser();
+      const games = getStoredGames();
 
-        // Get completed levels for this specific user
-        const userCompletions = JSON.parse(localStorage.getItem(`userCompletions_${user.id}`) || '{}');
-        const completedLevels = Object.keys(userCompletions)
-          .filter(key => key.startsWith('level_'))
-          .map(key => parseInt(key.replace('level_', '')))
-          .sort((a, b) => b - a);
+      const groupedPlayers = games.reduce((acc, game) => {
+        const playerId = game.userId || game.username || 'guest';
 
-        const levelsCompleted = completedLevels.length;
-        const highestLevel = levelsCompleted > 0 ? Math.max(...completedLevels) : 0;
+        if (!acc[playerId]) {
+          acc[playerId] = {
+            id: playerId,
+            username: game.username || currentUser?.username || currentUser?.name || 'Guest',
+            games: [],
+          };
+        }
 
-        // Use actual game count from saved games, fallback to stats
-        const actualGamesWon = Math.max(userGames.length, stats.gamesWon || 0);
+        acc[playerId].games.push(game);
+        return acc;
+      }, {});
 
-        // Calculate scores based on both games and level completions
-        const gameScores = userGames.map(game => {
-          if (game.score && game.score > 0) {
-            return game.score;
-          }
-          
-          let score = 1000;
-          if (game.timeElapsed) {
-            score += Math.max(0, 500 - game.timeElapsed * 2);
-          }
-          if (game.moves) {
-            score -= game.moves * 10;
-          }
-          if (game.hints) {
-            score -= game.hints * 100;
-          }
-          score += (game.boardSize || 4) * 50;
-          return Math.max(100, score);
-        });
+      const getRankByScore = (score) => {
+        if (score >= 10000) return 'Crown';
+        if (score >= 7000) return 'Diamond';
+        if (score >= 4000) return 'Gold';
+        if (score >= 2000) return 'Silver';
+        return 'Bronze';
+      };
 
-        const levelBonusScore = completedLevels.reduce((total, level) => {
-          const levelData = userCompletions[`level_${level}`];
-          const levelPoints = levelData ? levelData.points : ([100, 120, 150, 180, 220, 250, 280, 300, 350, 500][level - 1] || 500);
-          return total + levelPoints;
-        }, 0);
+      const offlineLeaderboard = Object.values(groupedPlayers)
+        .map((player) => {
+          const solvedGames = player.games.filter((game) => game.solved);
 
-        const totalScore = gameScores.reduce((a, b) => a + b, 0) + levelBonusScore;
-        const bestScore = Math.max(...gameScores, levelBonusScore || 0);
-        const avgScore = gameScores.length > 0 ? gameScores.reduce((a, b) => a + b, 0) / gameScores.length : 0;
-        const avgTime = stats.gamesWon > 0 ? stats.totalTime / stats.gamesWon : 0;
+          const gameScores = solvedGames.map((game) => {
+            if (game.score && game.score > 0) {
+              return game.score;
+            }
 
-        const getRankByLevel = (level) => {
-          if (level >= 10) return 'Crown';
-          if (level >= 7) return 'Diamond';
-          if (level >= 5) return 'Gold';
-          if (level >= 3) return 'Silver';
-          return 'Bronze';
-        };
+            let score = 1000;
+            if (game.timeElapsed) {
+              score += Math.max(0, 500 - game.timeElapsed * 2);
+            }
+            if (game.moves) {
+              score -= game.moves * 10;
+            }
+            if (game.hints) {
+              score -= game.hints * 100;
+            }
+            score += (game.boardSize || game.n || 4) * 50;
+            return Math.max(100, score);
+          });
 
-        return {
-          _id: user.id,
-          username: user.name,
-          gamesWon: actualGamesWon,
-          totalScore,
-          bestScore,
-          avgScore,
-          avgTime,
-          levelsCompleted,
-          highestLevel,
-          rank: getRankByLevel(highestLevel),
-          isCurrentUser: currentUser && user.id === currentUser.id
-        };
-      }).sort((a, b) => {
-        const scoreA = a.totalScore || a.bestScore || 0;
-        const scoreB = b.totalScore || b.bestScore || 0;
-        return scoreB - scoreA;
-      });
-      
-      console.log('📊 Final leaderboard:', offlineLeaderboard);
+          const totalScore = gameScores.reduce((a, b) => a + b, 0);
+          const bestScore = gameScores.length > 0 ? Math.max(...gameScores) : 0;
+          const avgScore = gameScores.length > 0 ? totalScore / gameScores.length : 0;
+          const avgTime = solvedGames.length > 0
+            ? solvedGames.reduce((sum, game) => sum + (game.timeElapsed || 0), 0) / solvedGames.length
+            : 0;
+
+          return {
+            _id: player.id,
+            username: player.username,
+            gamesWon: solvedGames.length,
+            totalScore,
+            bestScore,
+            avgScore,
+            avgTime,
+            levelsCompleted: solvedGames.length,
+            highestLevel: solvedGames.reduce((max, game) => Math.max(max, game.boardSize || game.n || 0), 0),
+            rank: getRankByScore(totalScore || bestScore),
+            isCurrentUser: currentUser && player.id === currentUser.id,
+          };
+        })
+        .sort((a, b) => (b.totalScore || b.bestScore || 0) - (a.totalScore || a.bestScore || 0));
+
       return offlineLeaderboard;
     } catch (error) {
       console.error('Error loading offline leaderboard:', error);

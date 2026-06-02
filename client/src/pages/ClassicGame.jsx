@@ -17,9 +17,43 @@ import {
   Award
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
-import { OfflineGameStore } from '../utils/offlineStore';
-import { OfflineAuth } from '../utils/offlineAuth';
 import './ClassicGame.css';
+
+const OFFLINE_GAMES_KEY = 'nqueens_offline_games';
+
+const getCurrentUser = () => {
+  try {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+      return JSON.parse(userStr);
+    }
+  } catch (error) {
+    console.error('Failed to parse current user:', error);
+  }
+
+  return null;
+};
+
+const saveOfflineGame = (gameData) => {
+  try {
+    const gamesJson = localStorage.getItem(OFFLINE_GAMES_KEY);
+    const games = gamesJson ? JSON.parse(gamesJson) : {};
+    const gameId = gameData.id || Date.now().toString();
+
+    games[gameId] = {
+      ...gameData,
+      id: gameId,
+      savedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(OFFLINE_GAMES_KEY, JSON.stringify(games));
+    return gameId;
+  } catch (error) {
+    console.error('Failed to save offline game:', error);
+    return null;
+  }
+};
 
 const ClassicGame = () => {
   const navigate = useNavigate();
@@ -162,10 +196,11 @@ const ClassicGame = () => {
     toast.success('🎉 Congratulations! You solved the puzzle!');
     
     // Save to offline store for leaderboard
-    const currentUser = OfflineAuth.getCurrentUser();
+    const currentUser = getCurrentUser();
     if (currentUser) {
       const gameData = {
         userId: currentUser.id,
+        username: currentUser.username || currentUser.name || 'Guest',
         boardSize,
         timeElapsed: elapsedTime,
         moves,
@@ -176,8 +211,8 @@ const ClassicGame = () => {
         completedAt: new Date().toISOString()
       };
       
-      OfflineGameStore.saveGame(gameData);
-      console.log('✅ Game saved to offline store:', gameData);
+      saveOfflineGame(gameData);
+      console.log('✅ Game saved locally:', gameData);
       
       // Dispatch custom event to refresh leaderboard
       window.dispatchEvent(new CustomEvent('gameCompleted', { detail: gameData }));

@@ -14,12 +14,10 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
       const elapsed = Math.floor((now - new Date(startTime).getTime()) / 1000);
       setElapsedTime(elapsed);
 
-      // Send time update to parent
       if (onTimeUpdate) {
         onTimeUpdate(elapsed);
       }
 
-      // Warning when exceeding expected time
       if (elapsed > expectedTime && !isWarning) {
         setIsWarning(true);
       }
@@ -43,13 +41,13 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
 
   const getPerformanceColor = () => {
     if (elapsedTime <= expectedTime) {
-      return 'text-green-600'; // Excellent
+      return 'text-green-600';
     } else if (elapsedTime <= expectedTime * 1.5) {
-      return 'text-yellow-600'; // Good
+      return 'text-yellow-600';
     } else if (elapsedTime <= expectedTime * 2) {
-      return 'text-orange-600'; // Average
+      return 'text-orange-600';
     } else {
-      return 'text-red-600'; // Needs improvement
+      return 'text-red-600';
     }
   };
 
@@ -72,7 +70,7 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
           <Clock className={`w-5 h-5 ${getPerformanceColor()}`} />
           <span className="font-semibold text-gray-700">Time</span>
         </div>
-        
+
         {isWarning && (
           <motion.div
             initial={{ scale: 0 }}
@@ -85,7 +83,6 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
         )}
       </div>
 
-      {/* Timer display */}
       <div className="text-center mb-3">
         <div className={`text-4xl font-bold font-mono ${getPerformanceColor()}`}>
           {formatTime(elapsedTime)}
@@ -95,7 +92,6 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
         <motion.div
           className={`absolute left-0 top-0 h-full rounded-full ${
@@ -111,7 +107,6 @@ const PuzzleTimer = ({ startTime, isActive, expectedTime, onTimeUpdate }) => {
         />
       </div>
 
-      {/* Performance indicator */}
       <div className="text-center">
         <span className={`text-xs font-semibold ${getPerformanceColor()}`}>
           {getPerformanceLabel()}
