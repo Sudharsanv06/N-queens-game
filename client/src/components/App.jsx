@@ -6,19 +6,21 @@ import { Capacitor } from '@capacitor/core'
 import { store } from '../store/store'
 import { SimpleMobileUtils as MobileUtils } from '../utils/simpleMobile'
 import ErrorBoundary from './ErrorBoundary'
-
+// Add these imports at the top with your other imports
+import DailyChallengeHistory from '../pages/DailyChallengeHistory'
+import DailyChallengeStats from '../pages/DailyChallengeStats'
 // ─── Layout & Shell ────────────────────────────────────────────────────────────
 import Layout from './layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
 import NotificationManager from './NotificationManager'
 import AnalyticsRoute from './AnalyticsRoute'
-
+import Settings from './pages/Settings'
 // ─── Static / Public Pages ────────────────────────────────────────────────────
 import Home from './Home'
 import About from './About'
 import Contact from './Contact'
 import Tutorial from './Tutorial'
-
+import Analytics from './pages/Analytics'
 // ─── Auth Pages ───────────────────────────────────────────────────────────────
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
@@ -164,7 +166,9 @@ const App = () => {
                   <Route path="/tutorial"    element={<Tutorial />} />
                   <Route path="/play"        element={<Play />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
-
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/daily-challenge/history" element={<DailyChallengeHistory />} />
+                  <Route path="/daily-challenge/stats" element={<DailyChallengeStats />} />
                   {/* Protected inside Layout */}
                   <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/profile"     element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -174,7 +178,7 @@ const App = () => {
                   <Route path="/badges"      element={<ProtectedRoute><BadgesPage /></ProtectedRoute>} />
                   <Route path="/rewards/history" element={<ProtectedRoute><RewardHistoryPage /></ProtectedRoute>} />
                   <Route path="/analytics"   element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
-
+                  <Route path="/analytics" element={<Analytics />} />
                   {/* Social */}
                   <Route path="/friends"     element={<ProtectedRoute><FriendsList /></ProtectedRoute>} />
                   <Route path="/replays"     element={<ProtectedRoute><GameReplays /></ProtectedRoute>} />

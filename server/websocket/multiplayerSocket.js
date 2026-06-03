@@ -99,6 +99,11 @@ class MultiplayerSocketHandler {
         await this.handleRejectRematch(socket)
       })
 
+      // NEW: Invite events for Day 12
+      socket.on('send_invite', async (data) => {
+        await this.sendInviteNotification(socket, data)
+      })
+
       // Disconnect
       socket.on('disconnect', () => {
         this.handleDisconnect(socket)
@@ -716,6 +721,81 @@ class MultiplayerSocketHandler {
       delete socket.isSpectator
     } catch (error) {
       console.error('Leave spectate error:', error)
+    }
+  }
+
+  // ============================================================
+  // NEW: Send Invite Notification (Day 12)
+  // ============================================================
+  async sendInviteNotification(socket, data) {
+    try {
+      const { toUserId, roomId, message } = data
+      
+      if (!socket.userId || !toUserId) {
+        socket.emit('error', { message: 'Invalid invite data' })
+        return
+      }
+      
+      // Get sender info
+      const fromUser = await User.findById(socket.userId).select('username avatarUrl')
+      if (!fromUser) return
+      
+      // Check if recipient is online
+      const recipientSocketId = this.userSockets.get(toUserId.toString())
+      
+      // Create database notification
+      const Notification = (await import('../models/Notification.js')).default
+      await Notification.createNotification({
+        userId: toUserId,
+        type: 'multiplayer-invite',
+        title: '🎮 Game Invite!',
+        message: message || `${fromUser.username} has invited you to a multiplayer match!`,
+        data: {
+          fromUserId: socket.userId,
+          fromUserName: fromUser.username,
+          roomId: roomId,
+          inviteTime: new Date().toISOString()
+        },
+        actionUrl: `/multiplayer/room/${roomId}`,
+        priority: 'high'
+      })
+      
+      // Send real-time notification if online
+      if (recipientSocketId) {
+        const recipientSocket = this.io.sockets.sockets.get(recipientSocketId)
+        if (recipientSocket) {
+          recipientSocket.emit('multiplayer_invite', {
+            fromUserId: socket.userId,
+            fromUserName: fromUser.username,
+            roomId: roomId,
+            message: message || `${fromUser.username} invites you to play!`
+          })
+        }
+      }
+      
+      // Send push notification
+      try {
+        const pushService = (await import('../services/pushNotificationService.js')).default
+        await pushService.sendNotification(toUserId, {
+          title: '🎮 Game Invite!',
+          body: `${fromUser.username} has invited you to play!`,
+          icon: '/icon-192x192.png',
+          badge: '/badge-72x72.png',
+          data: {
+            type: 'multiplayer-invite',
+            roomId: roomId,
+            url: `/multiplayer/room/${roomId}`
+          }
+        })
+      } catch (pushError) {
+        console.warn('Push notification failed:', pushError.message)
+      }
+      
+      socket.emit('invite_sent', { success: true, toUserId })
+      console.log(`📨 Invite sent from ${socket.userId} to ${toUserId}`)
+    } catch (error) {
+      console.error('Send invite error:', error)
+      socket.emit('error', { message: 'Failed to send invite' })
     }
   }
 

@@ -1,69 +1,90 @@
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { motion } from 'framer-motion'
-import { Shield, Award, Loader, CheckCircle } from 'lucide-react'
-import BadgeCollection from '../components/achievements/BadgeCollection'
-import { fetchUserBadges, equipBadge } from '../store/slices/badgeSlice'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Shield, Award, Loader, CheckCircle, Sparkles, Lock } from 'lucide-react'
+import axios from 'axios'
 
-const BadgesPage = () => {
-  const dispatch = useDispatch()
-  const { userBadges, total, earned, loading, error } = useSelector(state => state.badges)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+function BadgesPage() {
+  const [badges, setBadges] = useState([])
+  const [stats, setStats] = useState({ total: 0, earned: 0, collectionRate: 0 })
+  const [loading, setLoading] = useState(true)
   const [selectedBadge, setSelectedBadge] = useState(null)
+  const { token } = useSelector(state => state.auth)
 
   useEffect(() => {
-    dispatch(fetchUserBadges())
-  }, [dispatch])
+    fetchBadges()
+  }, [])
 
-  const handleBadgeClick = (badge) => {
-    setSelectedBadge(badge)
+  const fetchBadges = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/badges/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setBadges(response.data.badges || [])
+      setStats(response.data.stats || { total: 0, earned: 0, collectionRate: 0 })
+    } catch (error) {
+      console.error('Failed to fetch badges:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleEquipBadge = (badgeId, equip) => {
-    dispatch(equipBadge({ badgeId, equip }))
-      .then(() => {
-        dispatch(fetchUserBadges())
+  const handleEquipBadge = async (badgeId) => {
+    try {
+      await axios.post(`${API_URL}/api/badges/equip`, { badgeId }, {
+        headers: { Authorization: `Bearer ${token}` }
       })
+      fetchBadges()
+    } catch (error) {
+      console.error('Failed to equip badge:', error)
+    }
+  }
+
+  const getTierGradient = (tier) => {
+    switch (tier) {
+      case 'bronze': return 'from-orange-700 to-orange-900'
+      case 'silver': return 'from-gray-500 to-gray-700'
+      case 'gold': return 'from-yellow-600 to-yellow-800'
+      case 'platinum': return 'from-cyan-600 to-cyan-800'
+      case 'diamond': return 'from-purple-600 to-purple-800'
+      default: return 'from-[#F5B800] to-[#C41E1E]'
+    }
+  }
+
+  const getTierColor = (tier) => {
+    switch (tier) {
+      case 'bronze': return 'text-orange-400'
+      case 'silver': return 'text-gray-400'
+      case 'gold': return 'text-yellow-400'
+      case 'platinum': return 'text-cyan-400'
+      case 'diamond': return 'text-purple-400'
+      default: return 'text-[#F5B800]'
+    }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader className="w-12 h-12 text-blue-500 animate-spin" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 text-lg">Error loading badges</p>
-          <p className="text-gray-500 mt-2">{error.message || 'Please try again later'}</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#0C0505] to-[#1A0F0A] flex items-center justify-center">
+        <div className="w-12 h-12 border-3 border-[#F5B800] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0C0505] to-[#1A0F0A] py-8 px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="text-center mb-8"
         >
-          <div className="flex items-center gap-3 mb-4">
-            <Shield className="w-10 h-10 text-purple-500" />
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                Badge Collection
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Earn and equip badges to show off your achievements
-              </p>
-            </div>
-          </div>
+          <h1 className="text-4xl md:text-5xl font-bold font-['Cinzel'] text-[#FAF7F0] mb-2">
+            Badge Collection
+          </h1>
+          <p className="text-[#B8967A]/60">Earn and equip badges to show off your achievements</p>
         </motion.div>
 
         {/* Stats Overview */}
@@ -71,133 +92,159 @@ const BadgesPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Badges</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                  {total}
-                </p>
-              </div>
-              <Shield className="w-12 h-12 text-gray-300 dark:text-gray-600" />
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Earned</p>
-                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                  {earned}
-                </p>
-              </div>
-              <Award className="w-12 h-12 text-purple-300 dark:text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Collection Rate</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
-                  {Math.round((earned / total) * 100)}%
-                </p>
-              </div>
-              <CheckCircle className="w-12 h-12 text-green-300 dark:text-green-600" />
-            </div>
-          </div>
+          {[
+            { label: 'Total Badges', value: stats.total, icon: Shield, color: '#F5B800' },
+            { label: 'Earned', value: stats.earned, icon: Award, color: '#4ADE80' },
+            { label: 'Collection Rate', value: `${stats.collectionRate || 0}%`, icon: Sparkles, color: '#C084FC' }
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-[#1E1010] border border-[#F5B800]/15 rounded-xl p-4 text-center"
+            >
+              <stat.icon className="w-6 h-6 mx-auto mb-2" style={{ color: stat.color }} />
+              <div className="text-2xl font-bold text-[#FAF7F0]">{stat.value}</div>
+              <div className="text-xs text-[#B8967A]/60">{stat.label}</div>
+            </motion.div>
+          ))}
         </motion.div>
 
-        {/* Badge Collection */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <BadgeCollection
-            badges={userBadges}
-            onBadgeClick={handleBadgeClick}
-            onEquipBadge={handleEquipBadge}
-          />
-        </motion.div>
+        {/* Badges Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {badges.map((badge, i) => {
+            const isEarned = badge.isEarned
+            
+            return (
+              <motion.div
+                key={badge.id || i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setSelectedBadge(badge)}
+                className={`bg-[#1E1010] border rounded-xl p-4 text-center cursor-pointer transition-all ${
+                  isEarned 
+                    ? `border-[#F5B800]/30 hover:border-[#F5B800]/60 shadow-lg shadow-[#F5B800]/10` 
+                    : 'border-[#F5B800]/15 opacity-60'
+                }`}
+              >
+                {/* Badge Icon */}
+                <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br ${getTierGradient(badge.tier)} flex items-center justify-center text-3xl mb-3 ${
+                  !isEarned && 'grayscale'
+                }`}>
+                  {isEarned ? (badge.icon || '🏅') : <Lock className="w-8 h-8 text-white/50" />}
+                </div>
+                
+                {/* Badge Name */}
+                <h3 className={`font-bold font-['Cinzel'] text-sm mb-1 ${isEarned ? 'text-[#FAF7F0]' : 'text-[#B8967A]/60'}`}>
+                  {badge.name}
+                </h3>
+                
+                {/* Tier Badge */}
+                <span className={`text-xs ${getTierColor(badge.tier)} capitalize`}>
+                  {badge.tier}
+                </span>
+                
+                {/* Equipped Indicator */}
+                {badge.isEquipped && (
+                  <div className="mt-2 flex items-center justify-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-400" />
+                    <span className="text-xs text-green-400">Equipped</span>
+                  </div>
+                )}
+              </motion.div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Badge Detail Modal */}
-      {selectedBadge && (
-        <div
-          onClick={() => setSelectedBadge(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+      <AnimatePresence>
+        {selectedBadge && (
+          <div
+            onClick={() => setSelectedBadge(null)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
-            <div className="text-center">
-              <div className={`
-                w-32 h-32 mx-auto rounded-full flex items-center justify-center text-6xl mb-4
-                ${selectedBadge.tier === 'bronze' && 'bg-gradient-to-br from-orange-400 to-orange-600'}
-                ${selectedBadge.tier === 'silver' && 'bg-gradient-to-br from-gray-300 to-gray-500'}
-                ${selectedBadge.tier === 'gold' && 'bg-gradient-to-br from-yellow-400 to-yellow-600'}
-                ${selectedBadge.tier === 'platinum' && 'bg-gradient-to-br from-blue-400 to-blue-600'}
-                ${selectedBadge.tier === 'diamond' && 'bg-gradient-to-br from-purple-400 to-purple-600'}
-              `}>
-                {selectedBadge.icon}
-              </div>
-              
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {selectedBadge.name}
-              </h2>
-              
-              <div className="mb-4">
-                <span className={`
-                  px-4 py-1 rounded-full text-sm font-bold uppercase
-                  ${selectedBadge.tier === 'bronze' && 'bg-orange-200 text-orange-800'}
-                  ${selectedBadge.tier === 'silver' && 'bg-gray-300 text-gray-800'}
-                  ${selectedBadge.tier === 'gold' && 'bg-yellow-300 text-yellow-900'}
-                  ${selectedBadge.tier === 'platinum' && 'bg-blue-200 text-blue-800'}
-                  ${selectedBadge.tier === 'diamond' && 'bg-purple-200 text-purple-800'}
-                `}>
-                  {selectedBadge.tier}
-                </span>
-              </div>
-
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {selectedBadge.description}
-              </p>
-              
-              {selectedBadge.unlockCondition && (
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Unlock Condition</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {selectedBadge.unlockCondition.description}
-                  </p>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1E1010] border border-[#F5B800]/30 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <div className="text-center">
+                <div className={`w-28 h-28 mx-auto rounded-full bg-gradient-to-br ${getTierGradient(selectedBadge.tier)} flex items-center justify-center text-5xl mb-4`}>
+                  {selectedBadge.icon || '🏅'}
                 </div>
-              )}
+                
+                <h2 className="text-2xl font-bold font-['Cinzel'] text-[#FAF7F0] mb-2">
+                  {selectedBadge.name}
+                </h2>
+                
+                <div className="mb-4">
+                  <span className={`px-4 py-1 rounded-full text-sm font-bold uppercase ${getTierColor(selectedBadge.tier)} bg-${selectedBadge.tier}-600/20`}>
+                    {selectedBadge.tier}
+                  </span>
+                </div>
 
-              {selectedBadge.isEarned && selectedBadge.earnedAt && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Earned on {new Date(selectedBadge.earnedAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                <p className="text-[#B8967A]/80 mb-4">
+                  {selectedBadge.description}
                 </p>
-              )}
+                
+                {selectedBadge.unlockCondition && (
+                  <div className="bg-[#2A1A0A] rounded-lg p-4 mb-4">
+                    <p className="text-sm text-[#B8967A]/60 mb-1">Unlock Condition</p>
+                    <p className="font-semibold text-[#F5B800]">
+                      {selectedBadge.unlockCondition.description}
+                    </p>
+                  </div>
+                )}
 
-              <button
-                onClick={() => setSelectedBadge(null)}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+                {selectedBadge.isEarned && selectedBadge.earnedAt && (
+                  <p className="text-sm text-[#B8967A]/60 mb-4">
+                    Earned on {new Date(selectedBadge.earnedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSelectedBadge(null)}
+                    className="flex-1 bg-[#2A1A0A] hover:bg-[#3A2A1A] text-[#FAF7F0] font-semibold py-3 rounded-lg transition-all"
+                  >
+                    Close
+                  </button>
+                  
+                  {selectedBadge.isEarned && !selectedBadge.isEquipped && (
+                    <button
+                      onClick={() => handleEquipBadge(selectedBadge.id)}
+                      className="flex-1 bg-gradient-to-r from-[#F5B800] to-[#C41E1E] hover:opacity-90 text-white font-semibold py-3 rounded-lg transition-all"
+                    >
+                      Equip Badge
+                    </button>
+                  )}
+                  
+                  {selectedBadge.isEquipped && (
+                    <button
+                      className="flex-1 bg-green-600/20 border border-green-500 text-green-400 font-semibold py-3 rounded-lg cursor-default"
+                      disabled
+                    >
+                      ✓ Equipped
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

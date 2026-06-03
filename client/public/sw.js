@@ -1,38 +1,157 @@
-// Service Worker for Push Notifications
+// Service Worker for N-Queens Game - Push Notifications & Offline Support
+// Version: 1.0.0
+
+const CACHE_NAME = 'nqueens-v1'
+const OFFLINE_URL = '/offline.html'
+
+// Assets to cache on install (core assets only - dynamic assets will be cached on fetch)
+const STATIC_CACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/badge-72x72.png',
+  '/offline.html'
+]
+
+// Install event - cache core assets
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...')
   
-  // Skip waiting and immediately activate
+  // Skip waiting to activate immediately
   self.skipWaiting()
   
   event.waitUntil(
-    caches.open('nqueens-v1').then((cache) => {
-      console.log('Service Worker: Caching Files')
-      return cache.addAll([
-        '/',
-        '/index.html',
-        '/static/js/bundle.js',
-        '/static/css/main.css',
-        '/icon-192x192.png',
-        '/icon-512x512.png',
-        '/badge-72x72.png'
-      ]).catch(err => {
-        console.warn('Service Worker: Some files failed to cache:', err)
-        // Don't fail the installation if caching fails
-        return Promise.resolve()
+    caches.open(CACHE_NAME).then(async (cache) => {
+      console.log('Service Worker: Caching static assets')
+      
+      // Cache each asset individually to avoid failing the whole install if one fails
+      const cachePromises = STATIC_CACHE_URLS.map(async (url) => {
+        try {
+          const response = await fetch(url)
+          if (response.ok) {
+            await cache.put(url, response)
+            console.log(`Cached: ${url}`)
+          } else {
+            console.warn(`Failed to cache ${url}: ${response.status}`)
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch ${url}:`, error)
+        }
       })
+      
+      await Promise.all(cachePromises)
+      console.log('Service Worker: Static assets cached')
+    }).catch(err => {
+      console.warn('Service Worker: Cache open failed:', err)
     })
   )
 })
 
+// Activate event - clean up old caches and take control
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...')
   
-  // Take control of all clients immediately
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log(`Service Worker: Deleting old cache: ${cacheName}`)
+            return caches.delete(cacheName)
+          }
+        })
+      )
+    }).then(() => {
+      console.log('Service Worker: Taking control of clients')
+      return self.clients.claim()
+    })
+  )
 })
 
-// Handle push notifications
+// Fetch event - serve from cache first, fallback to network
+self.addEventListener('fetch', (event) => {
+  const { request } = event
+  const url = new URL(request.url)
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return
+  }
+  
+  // Skip cross-origin requests (except for CDNs)
+  if (url.origin !== self.location.origin && !url.hostname.includes('fonts.googleapis.com') && !url.hostname.includes('fonts.gstatic.com')) {
+    return
+  }
+  
+  // Skip API calls - never cache
+  if (url.pathname.startsWith('/api/')) {
+    return
+  }
+  
+  // Skip analytics and tracking
+  if (url.pathname.includes('analytics') || url.pathname.includes('tracking')) {
+    return
+  }
+  
+  event.respondWith(
+    caches.match(request).then(async (cachedResponse) => {
+      // Return cached response if available
+      if (cachedResponse) {
+        return cachedResponse
+      }
+      
+      // Try network fetch
+      try {
+        const networkResponse = await fetch(request)
+        
+        // Cache successful responses for static assets
+        if (networkResponse && networkResponse.ok) {
+          const responseToCache = networkResponse.clone()
+          
+          // Only cache specific file types
+          const shouldCache = (
+            request.destination === 'style' ||
+            request.destination === 'script' ||
+            request.destination === 'font' ||
+            request.destination === 'image' ||
+            url.pathname.endsWith('.js') ||
+            url.pathname.endsWith('.css') ||
+            url.pathname.endsWith('.json')
+          )
+          
+          if (shouldCache) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache)
+            }).catch(err => {
+              console.warn('Failed to cache response:', err)
+            })
+          }
+        }
+        
+        return networkResponse
+      } catch (error) {
+        console.warn('Fetch failed, returning offline page:', error)
+        
+        // Return offline page for navigation requests
+        if (request.mode === 'navigate') {
+          return caches.match(OFFLINE_URL)
+        }
+        
+        return new Response('Network error - please check your connection', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({
+            'Content-Type': 'text/plain'
+          })
+        })
+      }
+    })
+  )
+})
+
+// Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
   console.log('Service Worker: Push Received', event)
   
@@ -46,19 +165,22 @@ self.addEventListener('push', (event) => {
       data = {
         title: 'N-Queens Game',
         body: 'You have a new notification',
-        icon: '/icon-192x192.png'
+        icon: '/icon-192x192.png',
+        badge: '/badge-72x72.png'
       }
     }
   }
   
   const options = {
-    title: data.title || 'N-Queens Game',
     body: data.body || 'You have a new notification',
     icon: data.icon || '/icon-192x192.png',
     badge: data.badge || '/badge-72x72.png',
     image: data.image,
     data: data.data || {},
-    actions: data.actions || [],
+    actions: data.actions || [
+      { action: 'open', title: 'Open' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ],
     requireInteraction: data.requireInteraction || false,
     silent: data.silent || false,
     tag: data.tag || 'nqueens-notification',
@@ -68,11 +190,11 @@ self.addEventListener('push', (event) => {
   }
   
   event.waitUntil(
-    self.registration.showNotification(options.title, options)
+    self.registration.showNotification(data.title || 'N-Queens Game', options)
   )
 })
 
-// Handle notification clicks
+// Notification click event - handle user interaction
 self.addEventListener('notificationclick', (event) => {
   console.log('Service Worker: Notification Click Received', event)
   
@@ -82,11 +204,10 @@ self.addEventListener('notificationclick', (event) => {
   
   notification.close()
   
-  event.waitUntil(
-    handleNotificationClick(action, data)
-  )
+  event.waitUntil(handleNotificationClick(action, data))
 })
 
+// Handle different notification types and actions
 async function handleNotificationClick(action, data) {
   const clients = await self.clients.matchAll({
     type: 'window',
@@ -96,63 +217,114 @@ async function handleNotificationClick(action, data) {
   let url = '/'
   
   // Determine URL based on notification type and action
-  if (data.type === 'daily-challenge') {
-    if (action === 'play') {
-      url = '/daily-challenge'
-    } else if (action === 'dismiss') {
-      return // Just close notification
-    } else {
-      url = '/daily-challenge'
-    }
-  } else if (data.type === 'game-invite') {
-    if (action === 'accept') {
-      url = `/multiplayer?accept=${data.inviteId || ''}`
-    } else if (action === 'decline') {
-      // Send decline response to server
-      try {
-        await fetch('/api/multiplayer/decline-invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inviteId: data.inviteId })
-        })
-      } catch (error) {
-        console.error('Failed to decline invite:', error)
+  switch (data.type) {
+    case 'daily-challenge':
+    case 'daily-challenge-reminder':
+      if (action === 'play') {
+        url = '/daily-challenge'
+      } else if (action === 'dismiss') {
+        return // Just close notification
+      } else {
+        url = '/daily-challenge'
       }
-      return
-    } else {
-      url = '/multiplayer'
-    }
-  } else if (data.type === 'achievement') {
-    if (action === 'view') {
-      url = '/profile?tab=achievements'
-    } else {
-      url = '/profile'
-    }
-  } else if (data.url) {
-    url = data.url
+      break
+      
+    case 'game-invite':
+    case 'multiplayer-invite':
+      if (action === 'accept') {
+        const roomId = data.roomId || ''
+        url = `/multiplayer/room/${roomId}`
+        
+        // Send acceptance to server
+        try {
+          await fetch('/api/multiplayer/accept-invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              inviteId: data.inviteId,
+              roomId: data.roomId 
+            })
+          })
+        } catch (error) {
+          console.error('Failed to accept invite:', error)
+        }
+      } else if (action === 'decline') {
+        // Send decline response to server
+        try {
+          await fetch('/api/multiplayer/decline-invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              inviteId: data.inviteId,
+              roomId: data.roomId 
+            })
+          })
+        } catch (error) {
+          console.error('Failed to decline invite:', error)
+        }
+        return
+      } else {
+        url = '/multiplayer'
+      }
+      break
+      
+    case 'achievement':
+    case 'achievement-unlock':
+      if (action === 'view') {
+        url = '/achievements'
+      } else {
+        url = '/profile?tab=achievements'
+      }
+      break
+      
+    case 'match-found':
+      if (action === 'join') {
+        const roomId = data.roomId || ''
+        url = `/multiplayer/room/${roomId}`
+      } else {
+        url = '/multiplayer'
+      }
+      break
+      
+    case 'tournament':
+    case 'tournament-update':
+      if (action === 'view') {
+        const tournamentId = data.tournamentId || ''
+        url = `/tournaments/${tournamentId}`
+      } else {
+        url = '/tournaments'
+      }
+      break
+      
+    default:
+      url = data.url || '/'
   }
   
-  // Focus existing window or open new one
-  let targetClient = null
+  // Find existing window or open new one
+  let existingClient = null
   
   for (const client of clients) {
     if (client.url.includes(self.location.origin)) {
-      targetClient = client
+      existingClient = client
       break
     }
   }
   
-  if (targetClient) {
-    // Focus existing window and navigate
-    await targetClient.focus()
-    if (targetClient.navigate) {
-      await targetClient.navigate(url)
-    } else {
-      // Fallback: send message to client to navigate
-      targetClient.postMessage({
-        type: 'NAVIGATE',
-        url: url
-      })
+  if (existingClient) {
+    // Focus existing window
+    await existingClient.focus()
+    
+    // Navigate if needed
+    if (existingClient.url !== url && existingClient.navigate) {
+      try {
+        await existingClient.navigate(url)
+      } catch (error) {
+        // Fallback: send message to client
+        existingClient.postMessage({
+          type: 'NAVIGATE',
+          url: url
+        })
+      }
     }
   } else {
     // Open new window
@@ -160,7 +332,7 @@ async function handleNotificationClick(action, data) {
   }
 }
 
-// Handle notification close
+// Notification close event - track dismissals
 self.addEventListener('notificationclose', (event) => {
   console.log('Service Worker: Notification Closed', event)
   
@@ -168,7 +340,7 @@ self.addEventListener('notificationclose', (event) => {
   const data = notification.data || {}
   
   // Track notification dismissal if needed
-  if (data.trackDismissal) {
+  if (data.trackDismissal && data.id) {
     event.waitUntil(
       fetch('/api/notifications/track-dismissal', {
         method: 'POST',
@@ -185,32 +357,54 @@ self.addEventListener('notificationclose', (event) => {
   }
 })
 
-// Handle background sync for offline actions
-self.addEventListener('sync', (event) => {
-  console.log('Service Worker: Background Sync', event)
+// Message event - handle messages from client
+self.addEventListener('message', (event) => {
+  console.log('Service Worker: Message received', event.data)
   
-  if (event.tag === 'game-completion') {
-    event.waitUntil(syncGameCompletions())
-  } else if (event.tag === 'achievement-unlock') {
-    event.waitUntil(syncAchievements())
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
   }
 })
 
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  console.log('Service Worker: Background Sync', event.tag)
+  
+  switch (event.tag) {
+    case 'game-completion':
+      event.waitUntil(syncGameCompletions())
+      break
+    case 'achievement-unlock':
+      event.waitUntil(syncAchievements())
+      break
+    case 'game-save':
+      event.waitUntil(syncGameSaves())
+      break
+    default:
+      console.log('Unknown sync tag:', event.tag)
+  }
+})
+
+// Sync pending game completions
 async function syncGameCompletions() {
   try {
-    // Get pending game completions from IndexedDB
-    const pendingCompletions = await getPendingCompletions()
+    const pendingCompletions = await getPendingData('pendingGames')
     
     for (const completion of pendingCompletions) {
       try {
-        await fetch('/api/games', {
+        const response = await fetch('/api/games', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(completion)
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${completion.token}`
+          },
+          body: JSON.stringify(completion.data)
         })
         
-        // Remove from pending after successful sync
-        await removePendingCompletion(completion.id)
+        if (response.ok) {
+          await removePendingData('pendingGames', completion.id)
+          console.log('Game completion synced successfully')
+        }
       } catch (error) {
         console.error('Failed to sync game completion:', error)
       }
@@ -220,21 +414,26 @@ async function syncGameCompletions() {
   }
 }
 
+// Sync pending achievements
 async function syncAchievements() {
   try {
-    // Get pending achievements from IndexedDB
-    const pendingAchievements = await getPendingAchievements()
+    const pendingAchievements = await getPendingData('pendingAchievements')
     
     for (const achievement of pendingAchievements) {
       try {
-        await fetch('/api/achievements/unlock', {
+        const response = await fetch('/api/achievements/unlock', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(achievement)
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${achievement.token}`
+          },
+          body: JSON.stringify(achievement.data)
         })
         
-        // Remove from pending after successful sync
-        await removePendingAchievement(achievement.id)
+        if (response.ok) {
+          await removePendingData('pendingAchievements', achievement.id)
+          console.log('Achievement synced successfully')
+        }
       } catch (error) {
         console.error('Failed to sync achievement:', error)
       }
@@ -244,54 +443,121 @@ async function syncAchievements() {
   }
 }
 
-// IndexedDB helpers (placeholder - implement as needed)
-async function getPendingCompletions() {
-  // Implementation for getting pending completions from IndexedDB
-  return []
-}
-
-async function removePendingCompletion(id) {
-  // Implementation for removing completion from IndexedDB
-}
-
-async function getPendingAchievements() {
-  // Implementation for getting pending achievements from IndexedDB
-  return []
-}
-
-async function removePendingAchievement(id) {
-  // Implementation for removing achievement from IndexedDB
-}
-
-// Handle fetch events for offline functionality
-self.addEventListener('fetch', (event) => {
-  // Only handle GET requests for navigation and critical resources
-  if (event.request.method !== 'GET') {
-    return
-  }
-  
-  // Skip non-HTTP(S) requests
-  if (!event.request.url.startsWith('http')) {
-    return
-  }
-  
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request).catch(() => {
-        // If offline and no cache, return offline page for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('/offline.html')
+// Sync pending game saves
+async function syncGameSaves() {
+  try {
+    const pendingSaves = await getPendingData('pendingSaves')
+    
+    for (const save of pendingSaves) {
+      try {
+        const response = await fetch('/api/games/save', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${save.token}`
+          },
+          body: JSON.stringify(save.data)
+        })
+        
+        if (response.ok) {
+          await removePendingData('pendingSaves', save.id)
+          console.log('Game save synced successfully')
         }
-      })
-    })
-  )
-})
+      } catch (error) {
+        console.error('Failed to sync game save:', error)
+      }
+    }
+  } catch (error) {
+    console.error('Game save sync failed:', error)
+  }
+}
 
-// Send message to all clients
-async function sendMessageToClients(message) {
+// IndexedDB helpers for pending data
+async function getPendingData(storeName) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('NQueensOfflineDB', 1)
+    
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      const db = request.result
+      const transaction = db.transaction(storeName, 'readonly')
+      const store = transaction.objectStore(storeName)
+      const getAll = store.getAll()
+      
+      getAll.onsuccess = () => resolve(getAll.result)
+      getAll.onerror = () => reject(getAll.error)
+    }
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: 'id' })
+      }
+    }
+  })
+}
+
+async function removePendingData(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('NQueensOfflineDB', 1)
+    
+    request.onsuccess = () => {
+      const db = request.result
+      const transaction = db.transaction(storeName, 'readwrite')
+      const store = transaction.objectStore(storeName)
+      const deleteRequest = store.delete(id)
+      
+      deleteRequest.onsuccess = () => resolve()
+      deleteRequest.onerror = () => reject(deleteRequest.error)
+    }
+    
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Periodic background sync (if supported)
+if ('periodicSync' in self.registration) {
+  self.addEventListener('periodicsync', (event) => {
+    console.log('Periodic sync:', event.tag)
+    
+    switch (event.tag) {
+      case 'refresh-stats':
+        event.waitUntil(refreshUserStats())
+        break
+      case 'check-daily-challenge':
+        event.waitUntil(checkDailyChallenge())
+        break
+    }
+  })
+}
+
+async function refreshUserStats() {
   const clients = await self.clients.matchAll()
   clients.forEach(client => {
-    client.postMessage(message)
+    client.postMessage({
+      type: 'REFRESH_STATS'
+    })
   })
+}
+
+async function checkDailyChallenge() {
+  try {
+    const response = await fetch('/api/daily-challenge/current')
+    const data = await response.json()
+    
+    if (data.challenge && !data.completedToday) {
+      self.registration.showNotification('🎯 Daily Challenge Available!', {
+        body: 'A new N-Queens challenge awaits you!',
+        icon: '/icon-192x192.png',
+        badge: '/badge-72x72.png',
+        tag: 'daily-challenge',
+        data: {
+          type: 'daily-challenge',
+          url: '/daily-challenge'
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Failed to check daily challenge:', error)
+  }
 }
