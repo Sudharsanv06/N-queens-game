@@ -5,27 +5,32 @@ import { Toaster } from 'react-hot-toast'
 import { Capacitor } from '@capacitor/core'
 import { store } from '../store/store'
 import { SimpleMobileUtils as MobileUtils } from '../utils/simpleMobile'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from './ui/ErrorBoundary'
+import OfflineBanner from './ui/OfflineBanner'
+
 // Add these imports at the top with your other imports
 import DailyChallengeHistory from '../pages/DailyChallengeHistory'
 import DailyChallengeStats from '../pages/DailyChallengeStats'
+
 // ─── Layout & Shell ────────────────────────────────────────────────────────────
 import Layout from './layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
 import NotificationManager from './NotificationManager'
 import AnalyticsRoute from './AnalyticsRoute'
 import Settings from './pages/Settings'
+
 // ─── Static / Public Pages ────────────────────────────────────────────────────
 import Home from './Home'
 import About from './About'
 import Contact from './Contact'
 import Tutorial from './Tutorial'
 import Analytics from './pages/Analytics'
+
 // ─── Auth Pages ───────────────────────────────────────────────────────────────
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
-import ForgotPassword from './ForgotPassword'          // FIX: was missing from App.jsx
-import ResetPassword from './ResetPassword'            // FIX: was missing from App.jsx
+import ForgotPassword from './ForgotPassword'
+import ResetPassword from './ResetPassword'
 
 // ─── Core Game Pages ──────────────────────────────────────────────────────────
 import Play from '../pages/Play'
@@ -36,9 +41,9 @@ import TimeTrialGame from '../pages/TimeTrialGame'
 
 // ─── Dashboard / Profile / Settings ──────────────────────────────────────────
 import Dashboard from '../pages/Dashboard'
-import Profile from '../pages/Profile'                 // FIX: was missing from App.jsx
-import Stats from '../pages/Stats'                     // FIX: was missing from App.jsx
-import SettingsPage from '../pages/SettingsPage'       // FIX: was missing from App.jsx
+import Profile from '../pages/Profile'
+import Stats from '../pages/Stats'
+import SettingsPage from '../pages/SettingsPage'
 
 // ─── Leaderboard / Analytics ──────────────────────────────────────────────────
 import Leaderboard from './Leaderboard'
@@ -62,21 +67,24 @@ import { MultiplayerSpectate }    from '../pages/MultiplayerSpectate'
 import { MultiplayerLeaderboard } from '../pages/MultiplayerLeaderboard'
 
 // ─── Tournaments ──────────────────────────────────────────────────────────────
-import TournamentList from './TournamentList'          // FIX: was missing from App.jsx
+import TournamentList from './TournamentList'
 
 // ─── Social ───────────────────────────────────────────────────────────────────
-import FriendsList from './Social/FriendsList'         // FIX: was missing from App.jsx
-import GameReplays from './Social/GameReplays'         // FIX: was missing from App.jsx
+import FriendsList from './Social/FriendsList'
+import GameReplays from './Social/GameReplays'
 
 // ─── Puzzles ─────────────────────────────────────────────────────────────────
-import PuzzleList      from '../pages/PuzzleList'      // FIX: was missing from App.jsx
-import PuzzlePlay      from '../pages/PuzzlePlay'      // FIX: was missing from App.jsx
-import PuzzleCompleted from '../pages/PuzzleCompleted' // FIX: was missing from App.jsx
-import PuzzleCreator   from './Puzzles/PuzzleCreator'  // FIX: was missing from App.jsx
-import PuzzleLibrary   from './Puzzles/PuzzleLibrary'  // FIX: was missing from App.jsx
+import PuzzleList      from '../pages/PuzzleList'
+import PuzzlePlay      from '../pages/PuzzlePlay'
+import PuzzleCompleted from '../pages/PuzzleCompleted'
+import PuzzleCreator   from './Puzzles/PuzzleCreator'
+import PuzzleLibrary   from './Puzzles/PuzzleLibrary'
 
 // ─── Email / Notification Settings ───────────────────────────────────────────
 import EmailNotificationSettings from './EmailNotificationSettings'
+
+// ─── UI Components for Phase 5 ───────────────────────────────────────────────
+import { PageSkeleton, GameBoardSkeleton, LeaderboardSkeleton } from './ui/LoadingSkeleton'
 
 import '../index.css'
 
@@ -136,24 +144,16 @@ const App = () => {
   }
 
   if (!appInitialized) {
-    return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        alignItems: 'center', height: '100vh', background: '#0F0F1A',
-        fontSize: '18px', color: '#e5e7eb',
-      }}>
-        <div style={{ marginBottom: '16px' }}>Loading N-Queens Game...</div>
-        <div style={{ fontSize: '13px', color: '#6b7280' }}>
-          If this takes too long, please refresh.
-        </div>
-      </div>
-    )
+    return <PageSkeleton />
   }
 
   return (
     <ErrorBoundary>
       <Provider store={store}>
         <Router>
+          {/* Offline Banner - shows when connection drops */}
+          <OfflineBanner />
+          
           <div className="App">
             <AnalyticsRoute>
               <Routes>
@@ -169,6 +169,7 @@ const App = () => {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/daily-challenge/history" element={<DailyChallengeHistory />} />
                   <Route path="/daily-challenge/stats" element={<DailyChallengeStats />} />
+                  
                   {/* Protected inside Layout */}
                   <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/profile"     element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -179,6 +180,7 @@ const App = () => {
                   <Route path="/rewards/history" element={<ProtectedRoute><RewardHistoryPage /></ProtectedRoute>} />
                   <Route path="/analytics"   element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
                   <Route path="/analytics" element={<Analytics />} />
+                  
                   {/* Social */}
                   <Route path="/friends"     element={<ProtectedRoute><FriendsList /></ProtectedRoute>} />
                   <Route path="/replays"     element={<ProtectedRoute><GameReplays /></ProtectedRoute>} />
@@ -193,8 +195,8 @@ const App = () => {
                 {/* ── Auth (no Layout) ──────────────────────────────────── */}
                 <Route path="/login"          element={<Login />} />
                 <Route path="/signup"         element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />        {/* FIX: was missing */}
-                <Route path="/reset-password"  element={<ResetPassword />} />         {/* FIX: was missing */}
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password"  element={<ResetPassword />} />
 
                 {/* ── Classic Game Flow (no Layout) ─────────────────────── */}
                 <Route path="/board-size-selector" element={<BoardSizeSelector />} />
@@ -206,9 +208,9 @@ const App = () => {
 
                 {/* ── Daily Challenge (no Layout) ───────────────────────── */}
                 <Route path="/daily-challenge"         element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
-                <Route path="/daily-challenge/play"    element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />   {/* FIX: was missing */}
-                <Route path="/daily-challenge/history" element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} /> {/* FIX: was missing */}
-                <Route path="/daily-challenge/stats"   element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} /> {/* FIX: was missing */}
+                <Route path="/daily-challenge/play"    element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
+                <Route path="/daily-challenge/history" element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
+                <Route path="/daily-challenge/stats"   element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
 
                 {/* ── Puzzles ───────────────────────────────────────────── */}
                 <Route path="/puzzles"                   element={<PuzzleList />} />
@@ -218,12 +220,11 @@ const App = () => {
                 <Route path="/puzzle-library"            element={<PuzzleLibrary />} />
 
                 {/* ── Multiplayer ───────────────────────────────────────── */}
-                {/* FIX: /multiplayer alone now redirects to /multiplayer/home */}
                 <Route path="/multiplayer"             element={<Navigate to="/multiplayer/home" replace />} />
                 <Route path="/multiplayer/home"        element={<ProtectedRoute><MultiplayerHome /></ProtectedRoute>} />
                 <Route path="/multiplayer/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
                 <Route path="/multiplayer/room/:roomId"     element={<ProtectedRoute><MultiplayerRoom /></ProtectedRoute>} />
-                <Route path="/multiplayer/spectate/:roomId" element={<ProtectedRoute><MultiplayerSpectate /></ProtectedRoute>} /> {/* FIX: was missing :roomId */}
+                <Route path="/multiplayer/spectate/:roomId" element={<ProtectedRoute><MultiplayerSpectate /></ProtectedRoute>} />
                 <Route path="/multiplayer/leaderboard" element={<MultiplayerLeaderboard />} />
 
                 {/* ── Legacy redirects ─────────────────────────────────── */}
